@@ -8,6 +8,7 @@ import SettingScreen from "./src/screens/SettingScreen";
 import { View, Button, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import AddCryptoScreen from "./src/screens/AddCryptoScreen";
+import BitcoinScreen from "./src/BitcoinScreen";
 
 const Stack = createStackNavigator();
 
@@ -50,6 +51,7 @@ export default function App() {
         <Stack.Screen name="Settings" component={SettingScreen} />
         <Stack.Screen name="AddCrypto" component={AddCryptoScreen} />
         <Stack.Screen name="Wallet" component={WalletScreen} />
+        <Stack.Screen name="Bitcoin" component={BitcoinScreen} />
         <Stack.Screen name="Send" component={SendScreen} />
       </Stack.Navigator>
     </NavigationContainer>

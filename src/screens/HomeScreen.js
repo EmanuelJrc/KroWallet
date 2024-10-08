@@ -9,6 +9,10 @@ const HomeScreen = ({ navigation }) => {
         title="Go to Wallet"
         onPress={() => navigation.navigate("Wallet")}
       />
+      <Button
+        title="Go to Wallet"
+        onPress={() => navigation.navigate("Bitcoin")}
+      />
       <Button title="Send Nano" onPress={() => navigation.navigate("Send")} />
     </View>
   );
