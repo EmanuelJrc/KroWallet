@@ -27,6 +27,8 @@ export default function BitcoinScreen() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState();
 
+  console.log(BdkRn);
+
   const getMnemonic = async () => {
     try {
       const { data } = await BdkRn.generateMnemonic({

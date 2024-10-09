@@ -1,3 +1,5 @@
+import { Buffer } from "@craftzdog/react-native-buffer";
+window.Buffer = Buffer;
 import * as React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -9,6 +11,11 @@ import { View, Button, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import AddCryptoScreen from "./src/screens/AddCryptoScreen";
 import BitcoinScreen from "./src/BitcoinScreen";
+import DogeScreen from "./src/screens/DogeScreen";
+import "react-native-get-random-values"; // Polyfill for random values
+// Optional: If your app requires the full Node.js 'crypto' module
+import "stream-browserify"; // Polyfill for stream module
+import "events";
 
 const Stack = createStackNavigator();
 
@@ -53,6 +60,7 @@ export default function App() {
         <Stack.Screen name="Wallet" component={WalletScreen} />
         <Stack.Screen name="Bitcoin" component={BitcoinScreen} />
         <Stack.Screen name="Send" component={SendScreen} />
+        <Stack.Screen name="Doge" component={DogeScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
