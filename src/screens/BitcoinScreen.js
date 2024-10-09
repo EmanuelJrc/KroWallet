@@ -11,9 +11,9 @@ import {
   Image,
   Button,
 } from "react-native";
-import { styles } from "./styles/styles";
-const bitcoinLogo = require("../assets/bitcoin_logo.png");
-const bdkLogo = require("../assets/bdk_logo.png");
+import { styles } from "../styles/styles";
+const bitcoinLogo = require("../../assets/bitcoin_logo.png");
+const bdkLogo = require("../../assets/bdk_logo.png");
 
 export default function BitcoinScreen() {
   // BDK-RN method calls and state variables will be added here

@@ -7,13 +7,19 @@ import {
   ScrollView,
   TextInput,
   SafeAreaView,
+  Modal,
+  Pressable,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { wallet, block, tools } from "nanocurrency-web";
-import { getAccountBalance, sendTransaction } from "../utils/nanoApi";
-import { generateWork } from "../utils/nanoWork";
+import { getAccountBalance, sendTransaction } from "../utils/nano/nanoApi";
+import { generateWork } from "../utils/nano/nanoWork";
 import * as SecureStore from "expo-secure-store";
 import { fetchAndConvertTransactions } from "../services/nano/accountHistory";
 import axios from "axios";
+import QRCode from "react-native-qrcode-svg";
+import * as Clipboard from "expo-clipboard";
+import SendCryptoModule from "../utils/nano/sendNano";
 
 const NODE_URL = "https://rpc.nano.to";
 
@@ -27,6 +33,10 @@ export default function WalletScreen() {
   const [accounts, setAccounts] = useState([]);
   const [numberOfAccounts, setNumberOfAccounts] = useState(1);
   const [recipientAddress, setRecipientAddress] = useState("");
+  const [balance, setBalance] = useState(null); // Add state for balance
+
+  const [receiveModalVisible, setReceiveModalVisible] = useState(false);
+  const [sendModalVisible, setSendModalVisible] = useState(false);
 
   const [sendToAddress, setSendToAddress] = useState("");
   const [amountToSend, setAmountToSend] = useState("");
@@ -34,6 +44,13 @@ export default function WalletScreen() {
 
   const [receiveTransactionHash, setReceiveTransactionHash] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
+
+  const navigation = useNavigation(); // Use navigation hook
+
+  const copyToClipboard = async () => {
+    await Clipboard.setStringAsync(address);
+    alert("Address copied to clipboard");
+  };
 
   // Fetch transactions for the account
   const fetchTransactions = async () => {
@@ -49,6 +66,7 @@ export default function WalletScreen() {
   useEffect(() => {
     if (walletCreated && address) {
       fetchTransactions();
+      checkBalance();
     }
   }, [walletCreated, address]);
 
@@ -128,6 +146,7 @@ export default function WalletScreen() {
   const checkBalance = async () => {
     try {
       const balance = await getAccountBalance(address);
+      setBalance(balance);
       setTransactionStatus(`Balance: ${balance} NANO`);
     } catch (error) {
       setTransactionStatus("Error checking balance. Please try again.");
@@ -212,6 +231,103 @@ export default function WalletScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Nano Wallet</Text>
+        {balance !== null && (
+          <Text style={styles.balanceText}>{balance} NANO</Text>
+        )}
+
+        {/* Top right icon to navigate to the Wallet Details screen */}
+        <Button
+          title="Show Wallet Details"
+          onPress={() => {
+            navigation.navigate("ShowDetail", { mnemonic, privateKey });
+          }}
+        />
+
+        {/* Add the SendCryptoModule */}
+        {/* <SendCryptoModule address={address} privateKey={privateKey} /> */}
+
+        {/* Button to send transaction */}
+        <Button
+          title="Send Transaction"
+          onPress={() => setSendModalVisible(true)}
+        />
+
+        {/* "Receive" Button */}
+        <Button title="Receive" onPress={() => setReceiveModalVisible(true)} />
+
+        {/* Modal to display QR code and address */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={receiveModalVisible}
+          onRequestClose={() => {
+            setReceiveModalVisible(!receiveModalVisible);
+          }}
+        >
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Receive Nano</Text>
+
+            {/* Display QR code of the address */}
+            {address ? (
+              <QRCode value={address} size={200} />
+            ) : (
+              <Text>No address available</Text>
+            )}
+
+            {/* Display the wallet address */}
+            <Text style={styles.addressText}>{address}</Text>
+
+            {/* Copy button */}
+            <Pressable style={styles.button} onPress={copyToClipboard}>
+              <Text style={styles.textStyle}>Copy Address</Text>
+            </Pressable>
+
+            {/* Close the modal */}
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setReceiveModalVisible(!receiveModalVisible)}
+            >
+              <Text style={styles.textStyle}>Close</Text>
+            </Pressable>
+          </View>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={sendModalVisible}
+          onRequestClose={() => {
+            setSendModalVisible(!sendModalVisible);
+          }}
+        >
+          <View style={styles.sendModalView}>
+            {/* Send Nano Section */}
+            <Text style={styles.label}>Send Nano:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Recipient Address"
+              onChangeText={setRecipientAddress}
+              value={recipientAddress}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Amount to Send"
+              keyboardType="numeric"
+              onChangeText={setAmountToSend}
+              value={amountToSend}
+            />
+            <Button title="Send Transaction" onPress={handleSendTransaction} />
+            {transactionStatus ? <Text>{transactionStatus}</Text> : null}
+
+            {/* Close the modal */}
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setSendModalVisible(!sendModalVisible)}
+            >
+              <Text style={styles.textStyle}>Close</Text>
+            </Pressable>
+          </View>
+        </Modal>
 
         {!walletCreated ? (
           <>
@@ -228,12 +344,6 @@ export default function WalletScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.label}>Mnemonic:</Text>
-            <Text>{mnemonic}</Text>
-            <Text style={styles.label}>Address:</Text>
-            <Text>{address}</Text>
-            <Text style={styles.label}>Private Key:</Text>
-            <Text>{privateKey}</Text>
             <Text style={styles.label}>Accounts:</Text>
             {accounts.map((account, index) => (
               <View key={index} style={styles.accountContainer}>
@@ -252,7 +362,14 @@ export default function WalletScreen() {
                 <View key={index} style={styles.transactionContainer}>
                   <Text>Type: {tx.type}</Text>
                   <Text>Hash: {tx.hash}</Text>
-                  <Text>Amount: {tx.balanceNano} NANO</Text>
+                  <Text
+                    style={[
+                      styles.transactionAmount,
+                      { color: tx.type === "send" ? "red" : "green" }, // Set color based on type
+                    ]}
+                  >
+                    Amount: {tx.balanceNano} NANO
+                  </Text>
                 </View>
               ))
             )}
@@ -271,22 +388,6 @@ export default function WalletScreen() {
                 )
               }
             />
-            {/* Send Nano Section */}
-            <Text style={styles.label}>Send Nano:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Recipient Address"
-              onChangeText={setRecipientAddress}
-              value={recipientAddress}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Amount to Send"
-              keyboardType="numeric"
-              onChangeText={setAmountToSend}
-              value={amountToSend}
-            />
-            <Button title="Send Transaction" onPress={handleSendTransaction} />
             {transactionStatus ? <Text>{transactionStatus}</Text> : null}
 
             <Button title="Delete Wallet" onPress={deleteWallet} />
@@ -309,22 +410,69 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  label: {
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  sendModalView: {
     marginTop: 20,
+    backgroundColor: "grey",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    width: "100%",
+    height: "100%",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+    backgroundColor: "#2196F3",
+    marginTop: 20,
+  },
+  buttonClose: {
+    backgroundColor: "#f44336",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+    fontSize: 18,
     fontWeight: "bold",
   },
-  input: {
-    borderColor: "#ccc",
-    borderWidth: 1,
-    padding: 10,
-    marginTop: 10,
-    marginBottom: 20,
-    borderRadius: 5,
-  },
-  accountContainer: {
+  addressText: {
     marginTop: 20,
-    padding: 10,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 5,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  balanceText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginVertical: 20,
+    textAlign: "center",
+    color: "green",
   },
 });

@@ -6,14 +6,17 @@ const HomeScreen = ({ navigation }) => {
     <View>
       <Text style={styles.title}>Welcome to the Crypto Wallet App!</Text>
       <Button
-        title="Go to Wallet"
+        title="Go to Nano Wallet"
         onPress={() => navigation.navigate("Wallet")}
       />
       <Button
-        title="Go to Wallet"
+        title="Go to Bitcoin Wallet"
         onPress={() => navigation.navigate("Bitcoin")}
       />
-      <Button title="Send Nano" onPress={() => navigation.navigate("Send")} />
+      <Button
+        title="Go to Solana Wallet"
+        onPress={() => navigation.navigate("Solana")}
+      />
     </View>
   );
 };

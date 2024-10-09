@@ -1,4 +1,4 @@
-import { getAccountHistory } from "../../utils/nanoApi"; // Import the function to get history
+import { getAccountHistory } from "../../utils/nano/nanoApi"; // Import the function to get history
 import { tools } from "nanocurrency-web"; // Import Nano conversion tools
 
 // Function to fetch and convert transactions from RAW to NANO

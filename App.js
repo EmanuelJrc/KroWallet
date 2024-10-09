@@ -3,12 +3,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import HomeScreen from "./src/screens/HomeScreen";
 import WalletScreen from "./src/screens/WalletScreen";
-import SendScreen from "./src/screens/SendScreen";
+import SolScreen from "./src/screens/SolScreen";
 import SettingScreen from "./src/screens/SettingScreen";
 import { View, Button, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import AddCryptoScreen from "./src/screens/AddCryptoScreen";
-import BitcoinScreen from "./src/BitcoinScreen";
+import BitcoinScreen from "./src/screens/BitcoinScreen";
+import WalletDetailScreen from "./src/screens/WalletDetailScreen";
 
 const Stack = createStackNavigator();
 
@@ -50,9 +51,27 @@ export default function App() {
         />
         <Stack.Screen name="Settings" component={SettingScreen} />
         <Stack.Screen name="AddCrypto" component={AddCryptoScreen} />
-        <Stack.Screen name="Wallet" component={WalletScreen} />
+        <Stack.Screen
+          name="Wallet"
+          component={WalletScreen}
+          options={({ navigation }) => ({
+            title: "Nano", // Centered Title
+            headerRight: () => (
+              <Icon
+                name="add-circle-outline"
+                size={24}
+                color="black"
+                style={{ marginRight: 15 }}
+                onPress={() => {
+                  navigation.navigate("ShowDetail", { mnemonic, privateKey });
+                }}
+              />
+            ),
+          })}
+        />
+        <Stack.Screen name="ShowDetail" component={WalletDetailScreen} />
         <Stack.Screen name="Bitcoin" component={BitcoinScreen} />
-        <Stack.Screen name="Send" component={SendScreen} />
+        <Stack.Screen name="Solana" component={SolScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
