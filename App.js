@@ -56,17 +56,6 @@ export default function App() {
           component={WalletScreen}
           options={({ navigation }) => ({
             title: "Nano", // Centered Title
-            headerRight: () => (
-              <Icon
-                name="add-circle-outline"
-                size={24}
-                color="black"
-                style={{ marginRight: 15 }}
-                onPress={() => {
-                  navigation.navigate("ShowDetail", { mnemonic, privateKey });
-                }}
-              />
-            ),
           })}
         />
         <Stack.Screen name="ShowDetail" component={WalletDetailScreen} />
