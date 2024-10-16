@@ -6,10 +6,6 @@ export const styles = StyleSheet.create({
     justifyContent: "flex-end",
     padding: 20,
   },
-  header: {
-    justifyContent: "flex-end",
-    alignItems: "flex-end",
-  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -28,8 +24,8 @@ export const styles = StyleSheet.create({
   },
   detailIcon: {
     position: "absolute",
-    top: 1,
-    right: 1,
+    top: 5,
+    right: 5,
   },
   modalView: {
     marginTop: "30%",
@@ -118,6 +114,12 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  headerText: {
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
   },
   addressText: {
     marginTop: 20,
