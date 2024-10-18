@@ -28,6 +28,7 @@ import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import { styles } from "../styles/nanoStyles";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, Entypo } from "@expo/vector-icons";
+import WalletElement from "../components/WalletElement";
 
 const NODE_URL = "https://rpc.nano.to";
 
@@ -334,6 +335,7 @@ export default function WalletScreen() {
                 <Text style={styles.headerText}>View</Text>
               </TouchableOpacity>
             </View>
+            ;
           </SafeAreaView>
         </LinearGradient>
 
