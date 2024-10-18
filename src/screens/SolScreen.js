@@ -16,37 +16,57 @@ import RecentTransactions, {
 import * as SecureStore from "expo-secure-store";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ScrollView } from "react-native-gesture-handler";
+import WalletActionButton from "../components/WalletActionButton";
+import { LinearGradient } from "expo-linear-gradient";
+import { styles } from "../styles/nanoStyles";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
   const [balance, setBalance] = useState(null);
   const [recipient, setRecipient] = useState("");
+  const [walletCreated, setWalletCreated] = useState(false);
   const [amount, setAmount] = useState(0);
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
   const [privateKey, setPrivateKey] = useState(""); // For importing wallet
   const [transactions, setTransactions] = useState([]);
 
+  // Load wallet when the screen is opened
   useEffect(() => {
     const loadWallet = async () => {
       const storedWallet = await SecureStore.getItemAsync("solana_wallet");
       if (storedWallet) {
         const parsedWallet = JSON.parse(storedWallet);
         setWallet(parsedWallet);
+        setWalletCreated(true);
       }
     };
 
     loadWallet();
   }, []);
 
+  // Load balance and transactions when the wallet is set
+  useEffect(() => {
+    const fetchData = async () => {
+      if (wallet) {
+        await handleCheckBalance();
+        await handleFetchTransactions();
+      }
+    };
+
+    fetchData();
+  }, [wallet]);
+
   const handleCreateWallet = async () => {
     const newWallet = await createWallet();
     setWallet(newWallet);
+    setWalletCreated(true);
   };
 
   const handleImportWallet = async () => {
     try {
       const importedWallet = await importWallet(privateKey);
       setWallet(importedWallet);
+      setWalletCreated(true);
     } catch (error) {
       console.error("Failed to import wallet:", error);
     }
@@ -91,17 +111,33 @@ export default function SolScreen() {
     }
   };
 
+  // Function to delete the wallet from SecureStore
+  const handleDeleteWallet = async () => {
+    try {
+      await SecureStore.deleteItemAsync("solana_wallet");
+      setWallet(null);
+      setWalletCreated(false);
+      setBalance(null);
+      setRecipient("");
+      setAmount(0);
+      setTransactions([]);
+      console.log("Wallet deleted successfully");
+    } catch (error) {
+      console.log("Error deleting wallet:", error);
+    }
+  };
+
   return (
     <ScrollView
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <SafeAreaView style={{ flex: 1, justifyContent: "center", padding: 20 }}>
-        <Button title="Create Wallet" onPress={handleCreateWallet} />
+      <LinearGradient
+        colors={["#1ce6eb", "#296fc5", "#3500A2"]}
+        style={{ padding: 15, minHeight: 140, justifyContent: "center" }}
+      >
         {wallet && <Text>Wallet Address: {wallet.publicKey}</Text>}
-
-        <Button title="Check Balance" onPress={handleCheckBalance} />
         {balance !== null && <Text>Balance: {balance} SOL</Text>}
 
         <TextInput
@@ -121,16 +157,27 @@ export default function SolScreen() {
 
         <Button title="Send Transaction" onPress={handleSendTransaction} />
 
-        <TextInput
-          placeholder="Enter Private Key to Import"
-          value={privateKey}
-          onChangeText={setPrivateKey}
-          style={{ borderWidth: 1, padding: 10, marginVertical: 10 }}
-        />
-        <Button title="Import Wallet" onPress={handleImportWallet} />
+        {!walletCreated ? (
+          <>
+            <Button title="Generate New Wallet" onPress={handleCreateWallet} />
 
-        <RecentTransactions transactions={transactions} />
-      </SafeAreaView>
+            <Text style={styles.label}>Or import an existing wallet:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Private Key to Import"
+              onChangeText={setPrivateKey}
+              value={privateKey}
+            />
+            <Button title="Import Wallet" onPress={handleImportWallet} />
+          </>
+        ) : (
+          <>
+            <RecentTransactions transactions={transactions} />
+
+            <Button title="Delete Wallet" onPress={handleDeleteWallet} />
+          </>
+        )}
+      </LinearGradient>
     </ScrollView>
   );
 }

@@ -16,23 +16,29 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { wallet, block, tools } from "nanocurrency-web";
-import { getAccountBalance, sendTransaction } from "../utils/nano/nanoApi";
+import {
+  getAccountBalance,
+  sendTransaction,
+  getAccountHistory,
+} from "../utils/nano/nanoApi";
 import { generateWork } from "../utils/nano/nanoWork";
 import * as SecureStore from "expo-secure-store";
 import { fetchAndConvertTransactions } from "../services/nano/accountHistory";
 import axios from "axios";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
-import SendCryptoModule from "../utils/nano/sendNano";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import { styles } from "../styles/nanoStyles";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, Entypo } from "@expo/vector-icons";
-import WalletElement from "../components/WalletElement";
+import SendNano from "../components/SendNano";
+import ReceiveNano from "../components/ReceiveNano";
+import WalletActionButton from "../components/WalletActionButton";
+import TransactionList from "../components/NanoTransactionList";
 
 const NODE_URL = "https://rpc.nano.to";
 
-export default function WalletScreen() {
+export default function NanoScreen() {
   const [mnemonic, setMnemonic] = useState("");
   const [inputMnemonic, setInputMnemonic] = useState("");
   const [address, setAddress] = useState("");
@@ -43,12 +49,14 @@ export default function WalletScreen() {
   const [numberOfAccounts, setNumberOfAccounts] = useState(1);
   const [recipientAddress, setRecipientAddress] = useState("");
   const [balance, setBalance] = useState(null); // Add state for balance
+  const [lastTransactionHash, setLastTransactionHash] = useState("");
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
   const [derivedAccountsModalVisible, setDerivedAccountsModalVisible] =
     useState(false);
 
   const [receiveModalVisible, setReceiveModalVisible] = useState(false);
   const [sendModalVisible, setSendModalVisible] = useState(false);
+  const [receivingStatus, setReceivingStatus] = useState(null);
 
   const [sendToAddress, setSendToAddress] = useState("");
   const [amountToSend, setAmountToSend] = useState("");
@@ -66,6 +74,10 @@ export default function WalletScreen() {
 
   // Fetch transactions for the account
   const fetchTransactions = async () => {
+    if (!address) {
+      console.log("Address is undefined. Cannot fetch transactions.");
+      return;
+    }
     try {
       const transactionsInNano = await fetchAndConvertTransactions(address);
       setTransactions(transactionsInNano);
@@ -303,39 +315,30 @@ export default function WalletScreen() {
                 paddingVertical: 16,
               }}
             >
-              <TouchableOpacity
-                style={{ alignItems: "center" }}
+              <WalletActionButton
+                iconName="arrow-up-circle"
+                text="Send"
                 onPress={() => setSendModalVisible(true)}
-              >
-                <Ionicons name="arrow-up-circle" size={24} color="white" />
-                <Text style={styles.headerText}>Send</Text>
-              </TouchableOpacity>
+              />
 
-              <TouchableOpacity
-                style={{ alignItems: "center" }}
+              <WalletActionButton
+                iconName="arrow-down-circle"
+                text="Receive"
                 onPress={() => setReceiveModalVisible(true)}
-              >
-                <Ionicons name="arrow-down-circle" size={24} color="white" />
-                <Text style={styles.headerText}>Receive</Text>
-              </TouchableOpacity>
+              />
 
-              <TouchableOpacity
-                style={{ alignItems: "center" }}
-                onPress={() => setReceiveModalVisible(true)}
-              >
-                <Ionicons name="wallet" size={24} color="white" />
-                <Text style={styles.headerText}>Buy</Text>
-              </TouchableOpacity>
-              {/* https://nanexplorer.com/nano/account/nano_3rpc3jcnyrw9ruhmz5y4q1acbk4ry7fxzcit5mzro3xzts4366k175ydofoi */}
-              <TouchableOpacity
-                style={{ alignItems: "center" }}
+              <WalletActionButton
+                iconName="wallet"
+                text="Buy"
+                onPress={() => {}}
+              />
+
+              <WalletActionButton
+                iconName="exit"
+                text="View"
                 onPress={openExplore}
-              >
-                <Ionicons name="exit" size={24} color="white" />
-                <Text style={styles.headerText}>View</Text>
-              </TouchableOpacity>
+              />
             </View>
-            ;
           </SafeAreaView>
         </LinearGradient>
 
@@ -344,90 +347,23 @@ export default function WalletScreen() {
           {/* <SendCryptoModule address={address} privateKey={privateKey} /> */}
 
           {/* Modal to display QR code and address */}
-          <Modal
-            animationType="slide"
-            transparent={true}
+          <ReceiveNano
             visible={receiveModalVisible}
-            onRequestClose={() => {
-              setReceiveModalVisible(!receiveModalVisible);
-            }}
-          >
-            <View style={styles.modalContainer}>
-              <View style={styles.modalView}>
-                <Text style={styles.modalText}>Receive Nano</Text>
+            onClose={() => setReceiveModalVisible(false)}
+            address={address}
+          />
 
-                {/* Display QR code of the address */}
-                {address ? (
-                  <QRCode value={address} size={200} />
-                ) : (
-                  <Text>No address available</Text>
-                )}
-
-                {/* Display the wallet address */}
-                <Text style={styles.addressText}>{address}</Text>
-
-                {/* Copy button */}
-                <Pressable style={styles.button} onPress={copyToClipboard}>
-                  <Text style={styles.textStyle}>Copy Address</Text>
-                </Pressable>
-
-                {/* Close the modal */}
-                <Pressable
-                  style={[styles.button, styles.buttonClose]}
-                  onPress={() => setReceiveModalVisible(!receiveModalVisible)}
-                >
-                  <Text style={styles.textStyle}>Close</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Modal>
-
-          <Modal
-            animationType="slide"
-            transparent={true}
+          {/* Modal to send Nano */}
+          <SendNano
             visible={sendModalVisible}
-            onRequestClose={() => {
-              setSendModalVisible(!sendModalVisible);
-            }}
-          >
-            <View style={styles.modalContainer}>
-              <View style={styles.sendModalView}>
-                {/* Send Nano Section */}
-                <Text style={styles.modalTitle}>Send Nano:</Text>
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="Recipient Address"
-                  placeholderTextColor="#C0C0C0"
-                  onChangeText={setRecipientAddress}
-                  value={recipientAddress}
-                />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="Amount"
-                  placeholderTextColor="#C0C0C0"
-                  keyboardType="numeric"
-                  onChangeText={setAmountToSend}
-                  value={amountToSend.replace(",", ".")}
-                />
-
-                {transactionStatus ? <Text>{transactionStatus}</Text> : null}
-                <Pressable
-                  style={styles.button}
-                  onPress={handleSendTransaction}
-                >
-                  <Text style={styles.buttonText}>Send Nano</Text>
-                </Pressable>
-
-                {/* Close the modal */}
-                <Pressable
-                  style={[styles.sendButton, styles.sendButtonClose]}
-                  onPress={() => setSendModalVisible(!sendModalVisible)}
-                >
-                  <Text style={styles.buttonText}>Close</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Modal>
+            onClose={() => setSendModalVisible(false)}
+            handleSendTransaction={handleSendTransaction}
+            recipientAddress={recipientAddress}
+            setRecipientAddress={setRecipientAddress}
+            amountToSend={amountToSend}
+            setAmountToSend={setAmountToSend}
+            transactionStatus={transactionStatus}
+          />
 
           {/* Modal for Derived Accounts */}
           <Modal
@@ -493,49 +429,7 @@ export default function WalletScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.recent}>Recent Transactions:</Text>
-              {transactions.length === 0 ? (
-                <Text>No transactions found</Text>
-              ) : (
-                transactions.map((tx, index) => (
-                  <View key={index} style={styles.transactionContainer}>
-                    {/* Icon for transaction type */}
-                    <View style={styles.transactionHeader}>
-                      {tx.type === "send" ? (
-                        <Icon
-                          name="arrow-up-circle-outline"
-                          size={24}
-                          color="red"
-                        />
-                      ) : (
-                        <Icon
-                          name="arrow-down-circle-outline"
-                          size={24}
-                          color="green"
-                        />
-                      )}
-                      <Text style={styles.transactionType}>
-                        {tx.type === "send" ? "Sent" : "Received"}
-                      </Text>
-                    </View>
-
-                    {/* Transaction details */}
-                    <Text style={styles.transactionHash}>Hash: {tx.hash}</Text>
-                    <Text style={styles.transactionDate}>
-                      Date: {new Date(tx.timestamp * 1000).toLocaleString()}{" "}
-                      {/* Assuming you have a timestamp */}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.transactionAmount,
-                        { color: tx.type === "send" ? "red" : "green" },
-                      ]}
-                    >
-                      Amount: {tx.balanceNano} NANO
-                    </Text>
-                  </View>
-                ))
-              )}
+              <TransactionList transactions={transactions} />
 
               <Button title="Delete Wallet" onPress={deleteWallet} />
             </>

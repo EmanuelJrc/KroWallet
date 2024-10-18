@@ -167,6 +167,17 @@ export const fetchTransactions = async (publicKey) => {
   }
 };
 
+export const deleteWallet = async () => {
+  try {
+    // Remove the wallet from SecureStore
+    await SecureStore.deleteItemAsync("solana_wallet");
+    console.log("Wallet deleted successfully!");
+  } catch (error) {
+    console.error("Error deleting wallet:", error);
+    throw new Error("Failed to delete wallet");
+  }
+};
+
 const RecentTransactions = ({ transactions }) => {
   return (
     <>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import HomeScreen from "./src/screens/HomeScreen";
-import WalletScreen from "./src/screens/WalletScreen";
+import NanoScreen from "./src/screens/NanoScreen";
 import SolScreen from "./src/screens/SolScreen";
 import SettingScreen from "./src/screens/SettingScreen";
 import { View, Button, StyleSheet } from "react-native";
@@ -53,7 +53,7 @@ export default function App() {
         <Stack.Screen name="AddCrypto" component={AddCryptoScreen} />
         <Stack.Screen
           name="Wallet"
-          component={WalletScreen}
+          component={NanoScreen}
           options={({ navigation }) => ({
             title: "Nano", // Centered Title
           })}
