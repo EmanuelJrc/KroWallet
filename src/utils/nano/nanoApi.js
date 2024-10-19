@@ -25,10 +25,12 @@ export const generateWork = async (frontier) => {
 
 export const getAccountInfo = async (address) => {
   try {
+    console.log("Fetching account info for address:", address);
     const response = await axios.post(NODE_URL, {
       action: "account_info",
       account: address,
     });
+    console.log("Account info response:", response.data);
 
     if (response.data.error === "Account not found") {
       return null;
@@ -69,6 +71,8 @@ export const sendTransaction = async (signedBlock) => {
       subtype: "receive",
       block: signedBlock,
     });
+
+    console.log("Process response:", response.data);
 
     if (response.data && response.data.hash) {
       console.log("Transaction processed successfully:", response.data.hash);
@@ -139,11 +143,16 @@ export const handleReceivableTransactions = async (address, privateKey) => {
 
   for (const [hash, details] of Object.entries(receivableBlocks)) {
     const accountInfo = await getAccountInfo(address);
-    console.log("Account info:", accountInfo);
+    console.log("Fetched Account info:", accountInfo);
 
-    const workHash = accountInfo
-      ? accountInfo.frontier
-      : tools.addressToPublicKey(address);
+    if (!accountInfo || accountInfo.error === "Account not found") {
+      console.log(
+        "Account not found or not initialized, skipping block preparation."
+      );
+      continue; // Skip processing if account is not found
+    }
+
+    const workHash = accountInfo.frontier || tools.addressToPublicKey(address);
     const work = await generateWork(workHash);
 
     const blockData = {
@@ -154,13 +163,17 @@ export const handleReceivableTransactions = async (address, privateKey) => {
         "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
       amountRaw: details.amount,
       work: work,
-      previous: accountInfo ? accountInfo.frontier : null,
+      previous:
+        "0000000000000000000000000000000000000000000000000000000000000000",
     };
 
     console.log("Preparing to receive block:", blockData);
 
     const signedBlock = block.receive(blockData, privateKey);
+    console.log("Signed block:", signedBlock); // Log the signed block to inspect it
+
     const processResponse = await sendTransaction(signedBlock);
+    console.log("Process response:", processResponse);
 
     if (processResponse && processResponse.hash) {
       processedBlocks.push(processResponse.hash);

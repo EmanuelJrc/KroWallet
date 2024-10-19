@@ -3,7 +3,6 @@ window.Buffer = Buffer;
 import { getRandomValues as expoCryptoGetRandomValues } from "expo-crypto";
 import { registerRootComponent } from "expo";
 // index.js
-import "react-native-get-random-values";
 
 // getRandomValues polyfill
 class Crypto {

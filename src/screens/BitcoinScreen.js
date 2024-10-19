@@ -1,4 +1,12 @@
-import BdkRn from "bdk-rn";
+import BdkRn, {
+  DescriptorSecretKey,
+  Mnemonic,
+  Blockchain,
+  Wallet,
+  DatabaseConfig,
+  Descriptor,
+} from "bdk-rn";
+import { WordCount, Network, KeychainKind } from "bdk-rn/lib/lib/enums";
 import React, { Fragment, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +24,6 @@ const bitcoinLogo = require("../../assets/bitcoin_logo.png");
 const bdkLogo = require("../../assets/bdk_logo.png");
 
 export default function BitcoinScreen() {
-  // BDK-RN method calls and state variables will be added here
   const [mnemonic, setMnemonic] = useState("");
   const [displayText, setDisplayText] = useState("");
   const [balance, setBalance] = useState();
@@ -29,13 +36,10 @@ export default function BitcoinScreen() {
 
   const getMnemonic = async () => {
     try {
-      const { data } = await BdkRn.generateMnemonic({
-        length: 12,
-        network: "testnet",
-      });
-      console.log(data);
-      setMnemonic(data);
-      setDisplayText(JSON.stringify(data));
+      const mnemonicInstance = await new Mnemonic().create(WordCount.WORDS12);
+      const mnemonicData = mnemonicInstance;
+      setMnemonic(mnemonicData);
+      setDisplayText(JSON.stringify(mnemonicData));
     } catch (error) {
       console.error("Error generating mnemonic:", error);
       setDisplayText("Failed to generate mnemonic.");
@@ -43,39 +47,105 @@ export default function BitcoinScreen() {
   };
 
   const createWallet = async () => {
-    const { data } = await BdkRn.createWallet({
-      mnemonic: mnemonic,
-      network: "testnet",
-    });
-    setWallet(data);
-    setDisplayText(JSON.stringify(data));
+    try {
+      const descriptorSecretKey = await new DescriptorSecretKey().create(
+        Network.Testnet,
+        mnemonic
+      );
+      const externalDescriptor = await new Descriptor().newBip84(
+        descriptorSecretKey,
+        KeychainKind.External,
+        Network.Testnet
+      );
+      const internalDescriptor = await new Descriptor().newBip84(
+        descriptorSecretKey,
+        KeychainKind.Internal,
+        Network.Testnet
+      );
+
+      const config = {
+        url: "ssl://electrum.blockstream.info:60002",
+        sock5: null,
+        retry: 5,
+        timeout: 5,
+        stopGap: 100,
+        validateDomain: false,
+      };
+
+      const dbConfig = await new DatabaseConfig().memory(); // In-memory DB for simplicity, but can be persisted
+      const walletInstance = await new Wallet().create(
+        externalDescriptor,
+        internalDescriptor,
+        Network.Testnet,
+        dbConfig
+      );
+
+      setWallet(walletInstance);
+      setDisplayText(JSON.stringify(walletInstance));
+    } catch (error) {
+      console.error("Error creating wallet:", error);
+      setDisplayText("Failed to create wallet.");
+    }
   };
 
   const syncWallet = async () => {
-    const { data } = await BdkRn.syncWallet();
-    setSyncResponse(data);
-    setDisplayText(JSON.stringify(data));
+    try {
+      const config = {
+        url: "ssl://electrum.blockstream.info:60002",
+        sock5: null,
+        retry: 5,
+        timeout: 5,
+        stopGap: 100,
+        validateDomain: false,
+      };
+
+      const blockchain = await new Blockchain().create(config);
+      await wallet.sync(blockchain);
+      setSyncResponse("Wallet synchronized successfully");
+    } catch (error) {
+      console.error("Error syncing wallet:", error);
+      setDisplayText("Failed to sync wallet.");
+    }
   };
 
   const getBalance = async () => {
-    const { data } = await BdkRn.getBalance();
-    setBalance(data);
-    setDisplayText(data);
+    try {
+      const { data } = await wallet.getBalance(); // Assuming wallet instance provides getBalance()
+      setBalance(data);
+      setDisplayText(`Balance: ${data}`);
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setDisplayText("Failed to fetch balance.");
+    }
   };
 
   const getAddress = async () => {
-    const { data } = await BdkRn.getNewAddress();
-    setAddress(data);
-    setDisplayText(data);
+    try {
+      if (!wallet) {
+        setDisplayText("Wallet not initialized.");
+        return;
+      }
+      const { address } = await wallet.getAddress(); // Assuming wallet instance provides getAddress()
+      setAddress(address);
+      setDisplayText(`Address: ${address}`);
+    } catch (error) {
+      console.error("Error generating address:", error);
+      setDisplayText("Failed to generate address.");
+    }
   };
 
   const sendTx = async () => {
-    const { data } = await BdkRn.quickSend({
-      address: recipient,
-      amount: amount,
-    });
-    setTransaction(data);
-    setDisplayText(JSON.stringify(data));
+    try {
+      const { data } = await BdkRn.quickSend({
+        address: recipient,
+        amount: amount,
+      });
+      setTransaction(data);
+      setDisplayText(JSON.stringify(data));
+    } catch (error) {
+      console.error("Error sending transaction:", error);
+      setDisplayText("Failed to send transaction.");
+    }
   };
 
   return (
@@ -151,6 +221,7 @@ export default function BitcoinScreen() {
             onPress={getAddress}
           />
         </View>
+
         {/* input boxes and send transaction button */}
         <View style={styles.sendSection}>
           <Fragment>
