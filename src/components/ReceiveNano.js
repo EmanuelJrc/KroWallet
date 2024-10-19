@@ -1,10 +1,16 @@
 import React from "react";
-import { View, Text, Pressable, Modal } from "react-native";
+import { View, Text, Pressable, Modal, Button } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
 import { styles } from "../styles/nanoStyles";
 
-export default function ReceiveNano({ visible, onClose, address }) {
+export default function ReceiveNano({
+  visible,
+  onClose,
+  address,
+  onReceive,
+  receivingStatus,
+}) {
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(address);
     alert("Address copied to clipboard");
@@ -29,6 +35,10 @@ export default function ReceiveNano({ visible, onClose, address }) {
           <Pressable style={styles.button} onPress={copyToClipboard}>
             <Text style={styles.textStyle}>Copy Address</Text>
           </Pressable>
+          <Button title="Receive Pending Transactions" onPress={onReceive} />
+          {receivingStatus && (
+            <Text style={styles.statusText}>{receivingStatus}</Text>
+          )}
           <Pressable
             style={[styles.button, styles.buttonClose]}
             onPress={onClose}

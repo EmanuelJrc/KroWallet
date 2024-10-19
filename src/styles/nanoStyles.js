@@ -188,4 +188,10 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Dimmed background
   },
+  receivingStatusText: {
+    fontSize: 14,
+    color: "#333",
+    textAlign: "center",
+    marginTop: 5,
+  },
 });

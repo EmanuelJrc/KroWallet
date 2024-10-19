@@ -20,8 +20,9 @@ import {
   getAccountBalance,
   sendTransaction,
   getAccountHistory,
+  handleReceivableTransactions,
+  generateWork,
 } from "../utils/nano/nanoApi";
-import { generateWork } from "../utils/nano/nanoWork";
 import * as SecureStore from "expo-secure-store";
 import { fetchAndConvertTransactions } from "../services/nano/accountHistory";
 import axios from "axios";
@@ -108,6 +109,18 @@ export default function NanoScreen() {
   const onRefresh = async () => {
     setRefreshing(true); // Start refreshing
     try {
+      // Receive pending transactions
+      const receivedTransactions = await handleReceivableTransactions(
+        address,
+        privateKey
+      );
+      if (receivedTransactions && receivedTransactions.length > 0) {
+        setReceivingStatus(
+          `Received ${receivedTransactions.length} transaction(s)`
+        );
+      } else {
+        setReceivingStatus("No pending transactions to receive");
+      }
       // Re-fetch balance and transactions
       await checkBalance();
       await fetchTransactions();
@@ -273,6 +286,23 @@ export default function NanoScreen() {
     }
   };
 
+  const handleReceiveNano = async () => {
+    setReceivingStatus("Checking for receivable transactions...");
+    try {
+      const result = await handleReceivableTransactions(address, privateKey);
+      if (result && result.length > 0) {
+        setReceivingStatus(`Received ${result.length} transaction(s)`);
+        // Refresh balance and transactions
+        await checkBalance();
+        await fetchTransactions();
+      } else {
+        setReceivingStatus("No pending transactions to receive");
+      }
+    } catch (error) {
+      setReceivingStatus(`Error receiving: ${error.message}`);
+    }
+  };
+
   return (
     <ScrollView
       refreshControl={
@@ -305,6 +335,9 @@ export default function NanoScreen() {
             </View>
             {balance !== null && (
               <Text style={styles.balanceText}>{balance} NANO</Text>
+            )}
+            {receivingStatus && (
+              <Text style={styles.receivingStatusText}>{receivingStatus}</Text>
             )}
             <View
               style={{
@@ -351,6 +384,8 @@ export default function NanoScreen() {
             visible={receiveModalVisible}
             onClose={() => setReceiveModalVisible(false)}
             address={address}
+            onReceive={handleReceiveNano}
+            receivingStatus={receivingStatus}
           />
 
           {/* Modal to send Nano */}
