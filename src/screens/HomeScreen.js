@@ -17,6 +17,10 @@ const HomeScreen = ({ navigation }) => {
         title="Go to Solana Wallet"
         onPress={() => navigation.navigate("Solana")}
       />
+      <Button
+        title="Go to Banano Wallet"
+        onPress={() => navigation.navigate("Banano")}
+      />
     </View>
   );
 };

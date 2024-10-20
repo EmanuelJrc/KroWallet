@@ -2,14 +2,16 @@ import axios from "axios";
 import { tools, block } from "nanocurrency-web";
 
 // Replace with your RPC node URL
-const NODE_URL = "https://rpc.nano.to";
+const NODE_URL =
+  "https://nodes.nanswap.com/BAN?api_key=" +
+  process.env.EXPO_PUBLIC_BANANO_API_KEY;
 
 export const generateWork = async (frontier) => {
   try {
     const response = await axios.post(NODE_URL, {
       action: "work_generate",
       hash: frontier, // Use the actual frontier hash
-      key: process.env.EXPO_PUBLIC_NANO_API_KEY,
+      key: process.env.EXPO_PUBLIC_BANANO_API_KEY,
     });
 
     if (response.data.error) {
@@ -67,8 +69,9 @@ export const sendTransaction = async (signedBlock) => {
   try {
     const response = await axios.post(NODE_URL, {
       action: "process",
-      block: signedBlock,
       json_block: "true",
+      subtype: "receive",
+      block: signedBlock,
     });
 
     console.log("Process response:", response.data);
@@ -119,7 +122,6 @@ export const checkForReceivableTransactions = async (address) => {
 };
 
 // Function to handle receiving transactions
-// Function to handle receiving transactions
 export const handleReceivableTransactions = async (address, privateKey) => {
   console.log("Checking receivable transactions for address:", address);
 
@@ -145,70 +147,41 @@ export const handleReceivableTransactions = async (address, privateKey) => {
     const accountInfo = await getAccountInfo(address);
     console.log("Fetched Account info:", accountInfo);
 
-    let blockData = null;
-
-    // Check if the account is not found, which means it's a new account
     if (!accountInfo || accountInfo.error === "Account not found") {
-      console.log("Account not found, creating open block.");
-      const workHash = tools.addressToPublicKey(address); // Use the public key for generating the work
-      const work = await generateWork(workHash); // Generate work for the public key
+      console.log(
+        "Account not found or not initialized, skipping block preparation."
+      );
+      continue; // Skip processing if account is not found
+    }
 
-      blockData = {
-        walletBalanceRaw: "0", // For a new account, the starting balance is 0
-        fromAddress: details.source,
-        toAddress: address,
-        representativeAddress:
-          "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
-        amountRaw: details.amount,
-        work: work,
-        transactionHash: hash,
-        frontier:
-          "0000000000000000000000000000000000000000000000000000000000000000", // Open block's frontier is all zeros
-      };
+    const workHash = accountInfo.frontier || tools.addressToPublicKey(address);
+    const work = await generateWork(workHash);
 
-      const signedBlock = block.receive(blockData, privateKey); // Create an open block
-      console.log("Signed open block:", signedBlock); // Log the signed block
+    const blockData = {
+      walletBalanceRaw: accountInfo ? accountInfo.balance : "0",
+      fromAddress: details.source,
+      toAddress: address,
+      representativeAddress:
+        "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
+      amountRaw: details.amount,
+      work: work,
+      previous:
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    };
 
-      const processResponse = await sendTransaction(signedBlock);
-      console.log("Process response:", processResponse);
+    console.log("Preparing to receive block:", blockData);
 
-      if (processResponse && processResponse.hash) {
-        processedBlocks.push(processResponse.hash);
-        console.log("Open block processed successfully:", processResponse.hash);
-      } else {
-        console.log("Failed to process open block:", processResponse);
-      }
+    const signedBlock = block.receive(blockData, privateKey);
+    console.log("Signed block:", signedBlock); // Log the signed block to inspect it
+
+    const processResponse = await sendTransaction(signedBlock);
+    console.log("Process response:", processResponse);
+
+    if (processResponse && processResponse.hash) {
+      processedBlocks.push(processResponse.hash);
+      console.log("Block received successfully:", processResponse.hash);
     } else {
-      // Account exists, create a regular receive block
-      const workHash = accountInfo.frontier; // Use the frontier to generate work
-      const work = await generateWork(workHash); // Generate work for the frontier
-
-      blockData = {
-        walletBalanceRaw: accountInfo ? accountInfo.balance : "0",
-        fromAddress: details.source,
-        toAddress: address,
-        representativeAddress:
-          "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
-        amountRaw: details.amount,
-        transactionHash: hash,
-        work: work,
-        frontier: accountInfo.frontier, // Use the account's frontier
-      };
-
-      console.log("Preparing to receive block:", blockData);
-
-      const signedBlock = block.receive(blockData, privateKey); // Create a receive block
-      console.log("Signed receive block:", signedBlock); // Log the signed block
-
-      const processResponse = await sendTransaction(signedBlock);
-      console.log("Process response:", processResponse);
-
-      if (processResponse && processResponse.hash) {
-        processedBlocks.push(processResponse.hash);
-        console.log("Block received successfully:", processResponse.hash);
-      } else {
-        console.log("Failed to process block:", processResponse);
-      }
+      console.log("Failed to process block:", processResponse);
     }
   }
 

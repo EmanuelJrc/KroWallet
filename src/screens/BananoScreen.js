@@ -15,16 +15,16 @@ import {
   Linking,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { wallet, block, tools } from "nanocurrency-web";
+import { wallet, block, tools } from "bananocurrency-web";
 import {
   getAccountBalance,
   sendTransaction,
   getAccountHistory,
   handleReceivableTransactions,
   generateWork,
-} from "../utils/nano/nanoApi";
+} from "../utils/banano/bananoApi";
 import * as SecureStore from "expo-secure-store";
-import { fetchAndConvertTransactions } from "../services/nano/accountHistory";
+import { fetchAndConvertTransactions } from "../services/banano/accountHistory";
 import axios from "axios";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
@@ -37,9 +37,9 @@ import ReceiveNano from "../components/ReceiveNano";
 import WalletActionButton from "../components/WalletActionButton";
 import TransactionList from "../components/NanoTransactionList";
 
-const NODE_URL = "https://rpc.nano.to";
+const NODE_URL = "https://nodes.nanswap.com/BAN";
 
-export default function NanoScreen() {
+export default function BananoScreen() {
   const [mnemonic, setMnemonic] = useState("");
   const [inputMnemonic, setInputMnemonic] = useState("");
   const [address, setAddress] = useState("");
@@ -98,7 +98,7 @@ export default function NanoScreen() {
   // Function to securely save the mnemonic
   const saveWalletToSecureStore = async (mnemonic) => {
     try {
-      await SecureStore.setItemAsync("nano_mnemonic", mnemonic);
+      await SecureStore.setItemAsync("banano_mnemonic", mnemonic);
       console.log("Wallet saved successfully");
     } catch (error) {
       console.log("Error saving wallet:", error);
@@ -133,7 +133,7 @@ export default function NanoScreen() {
   // Function to load the wallet from SecureStore
   const loadWalletFromSecureStore = async () => {
     try {
-      const storedMnemonic = await SecureStore.getItemAsync("nano_mnemonic");
+      const storedMnemonic = await SecureStore.getItemAsync("banano_mnemonic");
       if (storedMnemonic) {
         const loadedWallet = wallet.fromMnemonic(storedMnemonic);
         setMnemonic(storedMnemonic);
@@ -281,7 +281,7 @@ export default function NanoScreen() {
   // Function to delete the wallet
   const deleteWallet = async () => {
     try {
-      await SecureStore.deleteItemAsync("nano_mnemonic");
+      await SecureStore.deleteItemAsync("banano_mnemonic");
       setMnemonic("");
       setAddress("");
       setPrivateKey("");
@@ -336,7 +336,7 @@ export default function NanoScreen() {
                 style={styles.title}
                 onPress={() => setDerivedAccountsModalVisible(true)}
               >
-                Nano Wallet{" "}
+                Banano Wallet{" "}
               </Text>
               <Icon
                 name="information-circle"
@@ -349,7 +349,7 @@ export default function NanoScreen() {
               />
             </View>
             {balance !== null && (
-              <Text style={styles.balanceText}>{balance} NANO</Text>
+              <Text style={styles.balanceText}>{balance} BANANO</Text>
             )}
             {receivingStatus && (
               <Text style={styles.receivingStatusText}>{receivingStatus}</Text>
@@ -475,9 +475,12 @@ export default function NanoScreen() {
                 onChangeText={(text) => setInputMnemonic(text)}
                 value={inputMnemonic}
               />
-              <Button title="Import Wallet" onPress={importWallet} />
               <Button
-                title="Import Wallet Legacy"
+                title="Import Wallet From Mnemonic"
+                onPress={importWallet}
+              />
+              <Button
+                title="Import Wallet From Legacy"
                 onPress={importWalletLegacy}
               />
             </>

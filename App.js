@@ -10,6 +10,7 @@ import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import AddCryptoScreen from "./src/screens/AddCryptoScreen";
 import BitcoinScreen from "./src/screens/BitcoinScreen";
 import WalletDetailScreen from "./src/screens/WalletDetailScreen";
+import BananoScreen from "./src/screens/BananoScreen";
 
 const Stack = createStackNavigator();
 
@@ -61,6 +62,7 @@ export default function App() {
         <Stack.Screen name="ShowDetail" component={WalletDetailScreen} />
         <Stack.Screen name="Bitcoin" component={BitcoinScreen} />
         <Stack.Screen name="Solana" component={SolScreen} />
+        <Stack.Screen name="Banano" component={BananoScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
