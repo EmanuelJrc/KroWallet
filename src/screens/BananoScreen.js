@@ -212,7 +212,7 @@ export default function BananoScreen() {
     try {
       const balance = await getAccountBalance(address);
       setBalance(balance);
-      setTransactionStatus(`Balance: ${balance} NANO`);
+      setTransactionStatus(`Balance: ${balance} BANANO`);
     } catch (error) {
       setTransactionStatus("Error checking balance. Please try again.");
     }
@@ -236,7 +236,7 @@ export default function BananoScreen() {
 
       // Fetch the balance first
       const balance = await getAccountBalance(address);
-      const balanceInRaw = tools.convert(balance, "NANO", "RAW");
+      const balanceInRaw = tools.convert(balance, "BAN", "RAW");
 
       const frontier = accountInfoResponse.data.frontier;
 
@@ -259,9 +259,9 @@ export default function BananoScreen() {
         fromAddress: address,
         toAddress: recipientAddress,
         representativeAddress:
-          "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
+          "ban_3tacocatezozswnu8xkh66qa1dbcdujktzmfpdj7ax66wtfrio6h5sxikkep",
         frontier: frontier,
-        amountRaw: tools.convert(amountToSend, "NANO", "RAW"),
+        amountRaw: tools.convert(amountToSend, "BAN", "RAW"),
         work: generatedWork,
       };
 
@@ -295,13 +295,13 @@ export default function BananoScreen() {
 
   const openExplore = async () => {
     try {
-      Linking.openURL("https://nanexplorer.com/nano/account/" + address);
+      Linking.openURL("https://creeper.banano.cc/account/" + address);
     } catch (error) {
-      console.log("https://nanexplorer.com/nano/account/" + address);
+      console.log("https://creeper.banano.cc/account/" + address);
     }
   };
 
-  const handleReceiveNano = async () => {
+  const handleReceiveBanano = async () => {
     setReceivingStatus("Checking for receivable transactions...");
     try {
       const result = await handleReceivableTransactions(address, privateKey);
@@ -396,15 +396,17 @@ export default function BananoScreen() {
 
           {/* Modal to display QR code and address */}
           <ReceiveNano
+            name={"Banano"}
             visible={receiveModalVisible}
             onClose={() => setReceiveModalVisible(false)}
             address={address}
-            onReceive={handleReceiveNano}
+            onReceive={handleReceiveBanano}
             receivingStatus={receivingStatus}
           />
 
           {/* Modal to send Nano */}
           <SendNano
+            name={"Banano"}
             visible={sendModalVisible}
             onClose={() => setSendModalVisible(false)}
             handleSendTransaction={handleSendTransaction}

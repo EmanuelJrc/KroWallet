@@ -396,6 +396,7 @@ export default function NanoScreen() {
 
           {/* Modal to display QR code and address */}
           <ReceiveNano
+            name={"Nano"}
             visible={receiveModalVisible}
             onClose={() => setReceiveModalVisible(false)}
             address={address}
@@ -405,6 +406,7 @@ export default function NanoScreen() {
 
           {/* Modal to send Nano */}
           <SendNano
+            name={"Nano"}
             visible={sendModalVisible}
             onClose={() => setSendModalVisible(false)}
             handleSendTransaction={handleSendTransaction}

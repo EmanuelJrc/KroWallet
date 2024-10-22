@@ -5,6 +5,7 @@ import * as Clipboard from "expo-clipboard";
 import { styles } from "../styles/nanoStyles";
 
 export default function ReceiveNano({
+  name,
   visible,
   onClose,
   address,
@@ -25,7 +26,7 @@ export default function ReceiveNano({
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalView}>
-          <Text style={styles.modalText}>Receive Nano</Text>
+          <Text style={styles.modalText}>Receive {name}</Text>
           {address ? (
             <QRCode value={address} size={200} />
           ) : (

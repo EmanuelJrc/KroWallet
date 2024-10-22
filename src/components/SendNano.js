@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, Modal } from "react-native";
 import { styles } from "../styles/nanoStyles";
 
 export default function SendNano({
+  name,
   visible,
   onClose,
   handleSendTransaction,
@@ -21,7 +22,7 @@ export default function SendNano({
     >
       <View style={styles.modalContainer}>
         <View style={styles.sendModalView}>
-          <Text style={styles.modalTitle}>Send Nano:</Text>
+          <Text style={styles.modalTitle}>Send {name}</Text>
           <TextInput
             style={styles.inputField}
             placeholder="Recipient Address"
