@@ -28,7 +28,7 @@ export default function TransactionList({ transactions }) {
             </View>
             <Text style={styles.transactionHash}>Hash: {tx.hash}</Text>
             <Text style={styles.transactionDate}>
-              Date: {new Date(tx.timestamp * 1000).toLocaleString()}
+              Date: {new Date(tx.local_timestamp * 1000).toLocaleString()}
             </Text>
             <Text
               style={[

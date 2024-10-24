@@ -14,7 +14,6 @@ import {
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import * as SecureStore from "expo-secure-store";
-import { sendTransaction } from "./utils/nano/nanoApi";
 
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 

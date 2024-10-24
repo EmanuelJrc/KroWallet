@@ -12,13 +12,13 @@ import RecentTransactions, {
   sendSolTransaction,
   importWallet,
   fetchTransactions,
-} from "../solanaFunctions";
+} from "../../services/solana/solanaFunctions";
 import * as SecureStore from "expo-secure-store";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ScrollView } from "react-native-gesture-handler";
-import WalletActionButton from "../components/WalletActionButton";
+import WalletActionButton from "../../components/WalletActionButton";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "../styles/nanoStyles";
+import { styles } from "../../styles/nanoStyles";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
@@ -137,6 +137,7 @@ export default function SolScreen() {
         colors={["#1ce6eb", "#296fc5", "#3500A2"]}
         style={{ padding: 15, minHeight: 140, justifyContent: "center" }}
       >
+        {wallet && <Text>Private key: {wallet.privateKey}</Text>}
         {wallet && <Text>Wallet Address: {wallet.publicKey}</Text>}
         {balance !== null && <Text>Balance: {balance} SOL</Text>}
 

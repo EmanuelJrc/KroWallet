@@ -2,16 +2,16 @@ import * as React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import HomeScreen from "./src/screens/HomeScreen";
-import NanoScreen from "./src/screens/NanoScreen";
-import SolScreen from "./src/screens/SolScreen";
+import NanoScreen from "./src/screens/currency/NanoScreen";
+import SolScreen from "./src/screens/currency/SolScreen";
 import SettingScreen from "./src/screens/SettingScreen";
 import { View, Button, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import AddCryptoScreen from "./src/screens/AddCryptoScreen";
-import BitcoinScreen from "./src/screens/BitcoinScreen";
+import BitcoinScreen from "./src/screens/currency/BitcoinScreen";
 import WalletDetailScreen from "./src/screens/WalletDetailScreen";
-import BananoScreen from "./src/screens/BananoScreen";
-
+import BananoScreen from "./src/screens/currency/BananoScreen";
+import StellarScreen from "./src/screens/currency/StellarScreen";
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -63,6 +63,7 @@ export default function App() {
         <Stack.Screen name="Bitcoin" component={BitcoinScreen} />
         <Stack.Screen name="Solana" component={SolScreen} />
         <Stack.Screen name="Banano" component={BananoScreen} />
+        <Stack.Screen name="Stellar" component={StellarScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

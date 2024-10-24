@@ -1,4 +1,4 @@
-import { getAccountHistory } from "../../utils/banano/bananoApi"; // Import the function to get history
+import { getAccountHistory } from "./bananoApi"; // Import the function to get history
 import { tools } from "bananocurrency-web"; // Import Nano conversion tools
 
 // Function to fetch and convert transactions from RAW to NANO

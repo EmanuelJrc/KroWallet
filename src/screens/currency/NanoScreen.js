@@ -22,20 +22,20 @@ import {
   getAccountHistory,
   handleReceivableTransactions,
   generateWork,
-} from "../utils/nano/nanoApi";
+} from "../../services/nano/nanoApi";
 import * as SecureStore from "expo-secure-store";
-import { fetchAndConvertTransactions } from "../services/nano/accountHistory";
+import { fetchAndConvertTransactions } from "../../services/nano/accountHistory";
 import axios from "axios";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
-import { styles } from "../styles/nanoStyles";
+import { styles } from "../../styles/nanoStyles";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, Entypo } from "@expo/vector-icons";
-import SendNano from "../components/SendNano";
-import ReceiveNano from "../components/ReceiveNano";
-import WalletActionButton from "../components/WalletActionButton";
-import TransactionList from "../components/NanoTransactionList";
+import SendNano from "../../components/SendNano";
+import ReceiveNano from "../../components/ReceiveNano";
+import WalletActionButton from "../../components/WalletActionButton";
+import TransactionList from "../../components/NanoTransactionList";
 
 const NODE_URL = "https://rpc.nano.to";
 
@@ -396,7 +396,6 @@ export default function NanoScreen() {
 
           {/* Modal to display QR code and address */}
           <ReceiveNano
-            name={"Nano"}
             visible={receiveModalVisible}
             onClose={() => setReceiveModalVisible(false)}
             address={address}
@@ -406,7 +405,6 @@ export default function NanoScreen() {
 
           {/* Modal to send Nano */}
           <SendNano
-            name={"Nano"}
             visible={sendModalVisible}
             onClose={() => setSendModalVisible(false)}
             handleSendTransaction={handleSendTransaction}

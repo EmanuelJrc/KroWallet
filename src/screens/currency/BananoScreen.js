@@ -22,20 +22,20 @@ import {
   getAccountHistory,
   handleReceivableTransactions,
   generateWork,
-} from "../utils/banano/bananoApi";
+} from "../../services/banano/bananoApi";
 import * as SecureStore from "expo-secure-store";
-import { fetchAndConvertTransactions } from "../services/banano/accountHistory";
+import { fetchAndConvertTransactions } from "../../services/banano/accountHistory";
 import axios from "axios";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
-import { styles } from "../styles/nanoStyles";
+import { styles } from "../../styles/nanoStyles";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, Entypo } from "@expo/vector-icons";
-import SendNano from "../components/SendNano";
-import ReceiveNano from "../components/ReceiveNano";
-import WalletActionButton from "../components/WalletActionButton";
-import TransactionList from "../components/NanoTransactionList";
+import SendNano from "../../components/SendNano";
+import ReceiveNano from "../../components/ReceiveNano";
+import WalletActionButton from "../../components/WalletActionButton";
+import TransactionList from "../../components/NanoTransactionList";
 
 const NODE_URL = "https://nodes.nanswap.com/BAN";
 
@@ -212,7 +212,7 @@ export default function BananoScreen() {
     try {
       const balance = await getAccountBalance(address);
       setBalance(balance);
-      setTransactionStatus(`Balance: ${balance} BANANO`);
+      setTransactionStatus(`Balance: ${balance} NANO`);
     } catch (error) {
       setTransactionStatus("Error checking balance. Please try again.");
     }
@@ -236,7 +236,7 @@ export default function BananoScreen() {
 
       // Fetch the balance first
       const balance = await getAccountBalance(address);
-      const balanceInRaw = tools.convert(balance, "BAN", "RAW");
+      const balanceInRaw = tools.convert(balance, "NANO", "RAW");
 
       const frontier = accountInfoResponse.data.frontier;
 
@@ -259,9 +259,9 @@ export default function BananoScreen() {
         fromAddress: address,
         toAddress: recipientAddress,
         representativeAddress:
-          "ban_3tacocatezozswnu8xkh66qa1dbcdujktzmfpdj7ax66wtfrio6h5sxikkep",
+          "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
         frontier: frontier,
-        amountRaw: tools.convert(amountToSend, "BAN", "RAW"),
+        amountRaw: tools.convert(amountToSend, "NANO", "RAW"),
         work: generatedWork,
       };
 
@@ -295,13 +295,13 @@ export default function BananoScreen() {
 
   const openExplore = async () => {
     try {
-      Linking.openURL("https://creeper.banano.cc/account/" + address);
+      Linking.openURL("https://nanexplorer.com/nano/account/" + address);
     } catch (error) {
-      console.log("https://creeper.banano.cc/account/" + address);
+      console.log("https://nanexplorer.com/nano/account/" + address);
     }
   };
 
-  const handleReceiveBanano = async () => {
+  const handleReceiveNano = async () => {
     setReceivingStatus("Checking for receivable transactions...");
     try {
       const result = await handleReceivableTransactions(address, privateKey);
@@ -396,17 +396,15 @@ export default function BananoScreen() {
 
           {/* Modal to display QR code and address */}
           <ReceiveNano
-            name={"Banano"}
             visible={receiveModalVisible}
             onClose={() => setReceiveModalVisible(false)}
             address={address}
-            onReceive={handleReceiveBanano}
+            onReceive={handleReceiveNano}
             receivingStatus={receivingStatus}
           />
 
           {/* Modal to send Nano */}
           <SendNano
-            name={"Banano"}
             visible={sendModalVisible}
             onClose={() => setSendModalVisible(false)}
             handleSendTransaction={handleSendTransaction}

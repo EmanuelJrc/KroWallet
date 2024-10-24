@@ -19,10 +19,9 @@ import {
   Image,
   Button,
 } from "react-native";
-import { styles } from "../styles/styles";
-const bitcoinLogo = require("../../assets/bitcoin_logo.png");
-const bdkLogo = require("../../assets/bdk_logo.png");
-
+import { styles } from "../../styles/styles";
+import bitcoinLogo from "../../../assets/bitcoin_logo.png";
+import bdkLogo from "../../../assets/bdk_logo.png";
 export default function BitcoinScreen() {
   const [mnemonic, setMnemonic] = useState("");
   const [displayText, setDisplayText] = useState("");

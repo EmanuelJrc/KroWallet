@@ -74,4 +74,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+package-lock.json
+yarn.lock
+bun.lockd
+
 # @end expo-cli

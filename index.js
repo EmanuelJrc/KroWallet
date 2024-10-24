@@ -1,9 +1,9 @@
+import "./shim";
 import { Buffer } from "@craftzdog/react-native-buffer";
-window.Buffer = Buffer;
 import { getRandomValues as expoCryptoGetRandomValues } from "expo-crypto";
 import { registerRootComponent } from "expo";
-// index.js
-
+import "react-native-get-random-values";
+global.Buffer = Buffer;
 // getRandomValues polyfill
 class Crypto {
   getRandomValues = expoCryptoGetRandomValues;
