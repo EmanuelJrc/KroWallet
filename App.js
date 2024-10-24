@@ -1,5 +1,9 @@
-import * as React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useContext } from "react";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import HomeScreen from "./src/screens/HomeScreen";
 import NanoScreen from "./src/screens/currency/NanoScreen";
@@ -12,14 +16,22 @@ import BitcoinScreen from "./src/screens/currency/BitcoinScreen";
 import WalletDetailScreen from "./src/screens/WalletDetailScreen";
 import BananoScreen from "./src/screens/currency/BananoScreen";
 import StellarScreen from "./src/screens/currency/StellarScreen";
+import { ThemeProvider, ThemeContext } from "./src/utils/ThemeContext";
 const Stack = createStackNavigator();
 
-export default function App() {
+function AppNavigator() {
+  const { isDarkMode } = useContext(ThemeContext);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
       <Stack.Navigator
         initialRouteName="Home"
-        screenOptions={{ headerTitleAlign: "center" }}
+        screenOptions={{
+          headerTitleAlign: "center",
+          headerStyle: { backgroundColor: isDarkMode ? "black" : "white" },
+          headerTintColor: isDarkMode ? "white" : "black",
+          headerTitleStyle: { fontWeight: "bold" },
+        }}
       >
         <Stack.Screen
           name="Home"
@@ -30,7 +42,7 @@ export default function App() {
               <Icon
                 name="settings-outline"
                 size={24}
-                color="black"
+                color={isDarkMode ? "white" : "black"}
                 style={{ marginLeft: 15 }}
                 onPress={() => {
                   navigation.navigate("Settings");
@@ -41,7 +53,7 @@ export default function App() {
               <Icon
                 name="add-circle-outline"
                 size={24}
-                color="black"
+                color={isDarkMode ? "white" : "black"}
                 style={{ marginRight: 15 }}
                 onPress={() => {
                   navigation.navigate("AddCrypto");
@@ -53,7 +65,7 @@ export default function App() {
         <Stack.Screen name="Settings" component={SettingScreen} />
         <Stack.Screen name="AddCrypto" component={AddCryptoScreen} />
         <Stack.Screen
-          name="Wallet"
+          name="Nano"
           component={NanoScreen}
           options={({ navigation }) => ({
             title: "Nano", // Centered Title
@@ -66,6 +78,14 @@ export default function App() {
         <Stack.Screen name="Stellar" component={StellarScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
   );
 }
 

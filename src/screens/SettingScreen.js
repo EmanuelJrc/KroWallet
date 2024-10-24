@@ -1,37 +1,41 @@
-import React, { useState } from "react";
-import { View, Text, Switch, Button, StyleSheet } from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  useColorScheme,
+  Switch,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ThemeContext } from "../utils/ThemeContext";
 
-const SettingsScreen = ({ navigation }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Toggle Dark Mode
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+const SettingScreen = () => {
+  const { isDarkMode, toggleDarkMode } = useContext(ThemeContext);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-
-      <View style={styles.settingItem}>
-        <Text style={styles.label}>Dark Mode</Text>
-        <Switch
-          value={isDarkMode}
-          onValueChange={toggleDarkMode}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={isDarkMode ? "#0078FF" : "#f4f3f4"}
-        />
+    <View
+      style={[
+        styles.container,
+        isDarkMode ? styles.darkContainer : styles.lightContainer,
+      ]}
+    >
+      <Text
+        style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}
+      >
+        Settings
+      </Text>
+      <View style={styles.darkModeContainer}>
+        <Text
+          style={[
+            styles.darkModeText,
+            isDarkMode ? styles.darkText : styles.lightText,
+          ]}
+        >
+          Dark Mode
+        </Text>
+        <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
       </View>
-
-      <Button
-        title="Manage Stellar Wallet"
-        onPress={() => navigation.navigate("StellarScreen")}
-      />
-      <Button
-        title="Manage Bitcoin Wallet"
-        onPress={() => navigation.navigate("BitcoinScreen")}
-        style={styles.button}
-      />
     </View>
   );
 };
@@ -39,27 +43,36 @@ const SettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  lightContainer: {
+    backgroundColor: "#FFFFFF",
+  },
+  darkContainer: {
+    backgroundColor: "#333333",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
-    textAlign: "center",
   },
-  settingItem: {
+  lightText: {
+    color: "#000000",
+  },
+  darkText: {
+    color: "#FFFFFF",
+  },
+  darkModeContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginTop: 20,
   },
-  label: {
+  darkModeText: {
+    marginRight: 10,
     fontSize: 18,
-  },
-  button: {
-    marginVertical: 10,
   },
 });
 
-export default SettingsScreen;
+export default SettingScreen;
