@@ -36,10 +36,6 @@ export default function ReceiveNano({
           <Pressable style={styles.button} onPress={copyToClipboard}>
             <Text style={styles.textStyle}>Copy Address</Text>
           </Pressable>
-          <Button title="Receive Pending Transactions" onPress={onReceive} />
-          {receivingStatus && (
-            <Text style={styles.statusText}>{receivingStatus}</Text>
-          )}
           <Pressable
             style={[styles.button, styles.buttonClose]}
             onPress={onClose}

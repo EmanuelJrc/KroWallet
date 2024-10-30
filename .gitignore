@@ -78,4 +78,6 @@ package-lock.json
 yarn.lock
 bun.lockd
 
+%ProgramData%
+
 # @end expo-cli

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable, Modal } from "react-native";
 import { styles } from "../styles/nanoStyles";
+import { BarCodeScanner } from "expo-barcode-scanner";
 
 export default function SendNano({
   name,
@@ -13,6 +14,22 @@ export default function SendNano({
   setAmountToSend,
   transactionStatus,
 }) {
+  const [hasPermission, setHasPermission] = useState(null);
+  const [isScannerVisible, setScannerVisible] = useState(false);
+
+  // Request camera permission for QR code scanning
+  useEffect(() => {
+    (async () => {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      setHasPermission(status === "granted");
+    })();
+  }, []);
+
+  // Handle QR code scanned result
+  const handleBarCodeScanned = ({ data }) => {
+    setRecipientAddress(data); // Set recipient address with QR code data
+    setScannerVisible(false); // Close scanner modal
+  };
   return (
     <Modal
       animationType="slide"
@@ -39,8 +56,17 @@ export default function SendNano({
             value={amountToSend.replace(",", ".")}
           />
           {transactionStatus ? <Text>{transactionStatus}</Text> : null}
+
+          {/* QR Code Scan Button */}
+          <Pressable
+            style={styles.button}
+            onPress={() => setScannerVisible(true)}
+          >
+            <Text style={styles.buttonText}>Scan QR Code</Text>
+          </Pressable>
+
           <Pressable style={styles.button} onPress={handleSendTransaction}>
-            <Text style={styles.buttonText}>Send Nano</Text>
+            <Text style={styles.buttonText}>Send {name}</Text>
           </Pressable>
           <Pressable
             style={[styles.sendButton, styles.sendButtonClose]}
@@ -50,6 +76,28 @@ export default function SendNano({
           </Pressable>
         </View>
       </View>
+
+      {/* QR Code Scanner Modal */}
+      {isScannerVisible && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={isScannerVisible}
+        >
+          <View style={styles.modalContainer}>
+            <BarCodeScanner
+              onBarCodeScanned={handleBarCodeScanned}
+              style={styles.barcodeScanner}
+            />
+            <Pressable
+              style={[styles.button, styles.sendButtonClose]}
+              onPress={() => setScannerVisible(false)}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 }

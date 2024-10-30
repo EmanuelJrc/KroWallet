@@ -212,13 +212,13 @@ export default function BananoScreen() {
     try {
       const balance = await getAccountBalance(address);
       setBalance(balance);
-      setTransactionStatus(`Balance: ${balance} NANO`);
+      setTransactionStatus(`Balance: ${balance} BAN`);
     } catch (error) {
       setTransactionStatus("Error checking balance. Please try again.");
     }
   };
 
-  // Send NANO transaction
+  // Send BAN transaction
   const handleSendTransaction = async () => {
     try {
       // Fetch the frontier using account_info first
@@ -236,7 +236,7 @@ export default function BananoScreen() {
 
       // Fetch the balance first
       const balance = await getAccountBalance(address);
-      const balanceInRaw = tools.convert(balance, "NANO", "RAW");
+      const balanceInRaw = tools.convert(balance, "BAN", "RAW");
 
       const frontier = accountInfoResponse.data.frontier;
 
@@ -259,9 +259,9 @@ export default function BananoScreen() {
         fromAddress: address,
         toAddress: recipientAddress,
         representativeAddress:
-          "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
+          "ban_3bancat34ba3xkszt3f4wdyx8mih8d7nszi1raoghfmqch78eai3y3jmga1x",
         frontier: frontier,
-        amountRaw: tools.convert(amountToSend, "NANO", "RAW"),
+        amountRaw: tools.convert(amountToSend, "BAN", "RAW"),
         work: generatedWork,
       };
 
@@ -295,9 +295,9 @@ export default function BananoScreen() {
 
   const openExplore = async () => {
     try {
-      Linking.openURL("https://nanexplorer.com/nano/account/" + address);
+      Linking.openURL("https://creeper.banano.cc/account/" + address);
     } catch (error) {
-      console.log("https://nanexplorer.com/nano/account/" + address);
+      console.log("https://creeper.banano.cc/account/" + address);
     }
   };
 
@@ -403,7 +403,7 @@ export default function BananoScreen() {
             receivingStatus={receivingStatus}
           />
 
-          {/* Modal to send Nano */}
+          {/* Modal to send Banano */}
           <SendNano
             visible={sendModalVisible}
             onClose={() => setSendModalVisible(false)}

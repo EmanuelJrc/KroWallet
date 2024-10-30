@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import {
@@ -86,6 +86,7 @@ export const sendSolTransaction = async (toAddress, amount) => {
     // Parse stored wallet
     const { secretKey, publicKey: fromPublicKeyString } =
       JSON.parse(storedWallet);
+
     const fromKeypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
     const fromPublicKey = new PublicKey(fromPublicKeyString);
 
@@ -178,64 +179,128 @@ export const deleteWallet = async () => {
 };
 
 const RecentTransactions = ({ transactions }) => {
+  const [publicKey, setPublicKey] = useState(null);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      const storedWallet = await SecureStore.getItemAsync("solana_wallet");
+      if (storedWallet) {
+        const { publicKey } = JSON.parse(storedWallet);
+        setPublicKey(publicKey);
+      }
+    };
+    fetchWallet();
+  }, []);
+
   return (
-    <>
-      <Text style={styles.recent}>Recent Transactions:</Text>
+    <View style={styles.transactionHistory}>
+      <Text style={styles.transactionTitle}>Transaction History</Text>
       {transactions.length === 0 ? (
         <Text>No transactions found</Text>
       ) : (
         transactions.map((tx, index) => {
-          // Assuming the transaction has a signature and blockTime
-          const txType = tx.meta.err ? "send" : "receive"; // Determine type based on error (replace with your logic)
-          const amount = tx.meta.preBalances[0] - tx.meta.postBalances[0]; // Adjust to get the actual amount sent/received
+          const amount = tx.meta.preBalances[0] - tx.meta.postBalances[0]; // Calculate the amount sent/received
+          const isReceived =
+            publicKey &&
+            tx.transaction.message.accountKeys[1].toString() === publicKey; // Determine if the transaction is received
 
           return (
-            <View key={index} style={styles.transactionContainer}>
-              {/* Icon for transaction type */}
-              <View style={styles.transactionHeader}>
-                {txType === "send" ? (
-                  <Icon name="arrow-up-circle-outline" size={24} color="red" />
-                ) : (
-                  <Icon
-                    name="arrow-down-circle-outline"
-                    size={24}
-                    color="green"
-                  />
-                )}
+            <View
+              key={index}
+              style={[
+                styles.transactionItem,
+                isReceived
+                  ? styles.receivedTransaction
+                  : styles.sentTransaction,
+              ]}
+            >
+              {/* Transaction Date */}
+              <Text style={styles.transactionDate}>
+                {new Date(tx.blockTime * 1000).toLocaleDateString()}
+              </Text>
+              <View style={styles.transactionContent}>
                 <Text style={styles.transactionType}>
-                  {txType === "send" ? "Sent" : "Received"}
+                  {isReceived ? "Received" : "Sent"}
+                </Text>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    isReceived ? styles.amountReceived : styles.amountSent,
+                  ]}
+                >
+                  {isReceived
+                    ? `+${(amount / LAMPORTS_PER_SOL).toFixed(6)}`
+                    : `-${(amount / LAMPORTS_PER_SOL).toFixed(6)}`}
+                  SOL {/* Convert lamports to SOL */}
                 </Text>
               </View>
-
-              {/* Transaction details */}
-              <Text style={styles.transactionHash}>
-                Hash: {tx.transaction.signatures[0]}
-              </Text>
-              <Text style={styles.transactionDate}>
-                Date: {new Date(tx.blockTime * 1000).toLocaleString()}
-              </Text>
-              <Text
-                style={[
-                  styles.transactionAmount,
-                  { color: txType === "send" ? "red" : "green" },
-                ]}
-              >
-                Amount: {amount / LAMPORTS_PER_SOL} SOL{" "}
-                {/* Convert lamports to SOL */}
-                {/* Display transaction fee */}
-              </Text>
               <Text style={styles.transactionFee}>
-                Fee: {tx.meta.fee / LAMPORTS_PER_SOL} SOL
+                Fee: {(tx.meta.fee / LAMPORTS_PER_SOL).toFixed(6)} SOL
+              </Text>
+              <Text style={styles.transactionAddress}>
+                {isReceived
+                  ? `From: ${tx.transaction.message.accountKeys[0]}`
+                  : `To: ${tx.transaction.message.accountKeys[1]}`}
               </Text>
             </View>
           );
         })
       )}
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  transactionAddress: {
+    fontSize: 14,
+    color: "#ccc",
+    marginTop: 5,
+  },
+  amountReceived: {
+    color: "green",
+  },
+  amountSent: {
+    color: "red",
+  },
+  transactionHistory: {
+    marginTop: 20,
+    width: "100%",
+  },
+  transactionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#fff",
+  },
+  transactionItem: {
+    backgroundColor: "#2b2b2b",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  transactionDate: {
+    fontSize: 14,
+    color: "#888",
+    marginBottom: 5,
+  },
+  transactionContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  transactionType: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   recent: {
     fontSize: 18,
     fontWeight: "bold",
@@ -252,32 +317,15 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
     elevation: 2,
   },
-  transactionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  transactionType: {
-    flexDirection: "row",
-    marginLeft: 10,
-    fontWeight: "bold",
-  },
   transactionHash: {
     marginTop: 5,
     color: "#555",
-  },
-  transactionDate: {
-    marginTop: 5,
-    color: "#555",
-  },
-  transactionAmount: {
-    marginTop: 5,
-    fontWeight: "bold",
-    marginBottom: 5,
   },
   transactionFee: {
     fontSize: 14,
     color: "#888", // Lighter color to differentiate from the amount
     fontStyle: "italic", // Optional for styling emphasis
+    textAlign: "right", // Optional for centering the text
   },
 });
 

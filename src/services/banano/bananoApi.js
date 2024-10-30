@@ -162,7 +162,7 @@ export const handleReceivableTransactions = async (address, privateKey) => {
       fromAddress: details.source,
       toAddress: address,
       representativeAddress:
-        "nano_1anrzcuwe64rwxzcco8dkhpyxpi8kd7zsjc1oeimpc3ppca4mrjtwnqposrs",
+        "ban_3bancat34ba3xkszt3f4wdyx8mih8d7nszi1raoghfmqch78eai3y3jmga1x",
       amountRaw: details.amount,
       work: work,
       previous:

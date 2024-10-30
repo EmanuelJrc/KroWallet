@@ -22,15 +22,28 @@ export const styles = StyleSheet.create({
     marginBottom: 15,
     backgroundColor: "#f1f1f1",
   },
+  barcodeScanner: {
+    width: "100%",
+    height: "80%",
+  },
   detailIcon: {
     position: "absolute",
     top: 5,
     right: 5,
   },
+  balanceSection: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  darkText: {
+    color: "#ffffff",
+    fontSize: 24,
+    marginBottom: 10,
+  },
   modalView: {
     marginTop: "30%",
     margin: 20,
-    backgroundColor: "white",
+    backgroundColor: "#333333",
     borderRadius: 20,
     padding: 35,
     alignItems: "center",
@@ -43,10 +56,20 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  actionButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 20,
+  },
+  actionButton: {
+    backgroundColor: "#333",
+    padding: 15,
+    borderRadius: 10,
+  },
   sendModalView: {
     width: "90%",
     marginTop: "30%",
-    backgroundColor: "white",
+    backgroundColor: "#333333",
     borderRadius: 20,
     padding: 20,
     alignItems: "center",
@@ -63,7 +86,7 @@ export const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 15,
-    color: "#333", // Softer black
+    color: "white", // Softer black
   },
   sendButton: {
     backgroundColor: "#28A745", // Green for success action
@@ -114,6 +137,7 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     fontWeight: "bold",
+    color: "#ffffff",
   },
   headerText: {
     textAlign: "center",
@@ -125,9 +149,11 @@ export const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     textAlign: "center",
+    color: "#ffffff",
   },
   balanceText: {
-    fontSize: 18,
+    color: "#000",
+    fontSize: 24,
     fontWeight: "bold",
     marginVertical: 20,
     textAlign: "center",
@@ -143,13 +169,15 @@ export const styles = StyleSheet.create({
   },
 
   transactionContainer: {
-    padding: 15,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    backgroundColor: "#f9f9f9", // Light background for the card-like layout
-    elevation: 3, // Small shadow for elevation
+    marginVertical: 5,
+    padding: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
   },
   transactionHeader: {
     flexDirection: "row",
