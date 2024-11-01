@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Button, Alert } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import {
   Connection,
@@ -14,6 +14,7 @@ import {
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import * as SecureStore from "expo-secure-store";
+import * as Clipboard from "expo-clipboard";
 
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 
@@ -178,6 +179,51 @@ export const deleteWallet = async () => {
   }
 };
 
+export const PrivateKeyDisplay = () => {
+  const [privateKey, setPrivateKey] = useState(null);
+  const [showPrivateKey, setShowPrivateKey] = useState(false);
+
+  useEffect(() => {
+    const fetchPrivateKey = async () => {
+      const storedWallet = await SecureStore.getItemAsync("solana_wallet");
+      if (storedWallet) {
+        const { secretKey } = JSON.parse(storedWallet);
+        setPrivateKey(bs58.encode(Uint8Array.from(secretKey)));
+      }
+    };
+    fetchPrivateKey();
+  }, []);
+
+  const copyToClipboard = async () => {
+    if (privateKey) {
+      await Clipboard.setStringAsync(privateKey);
+      alert("Copied to Clipboard", "Your private key has been copied!");
+    }
+  };
+
+  return (
+    <View style={styles.privateKeyContainer}>
+      <Text style={styles.privateKeyTitle}>Private Key</Text>
+      {showPrivateKey ? (
+        <Text style={styles.privateKey}>{privateKey}</Text>
+      ) : (
+        <Text style={styles.privateKey}>******</Text> // Masked
+      )}
+      <Button
+        title={showPrivateKey ? "Hide Private Key" : "Show Private Key"}
+        onPress={() => setShowPrivateKey((prev) => !prev)}
+      />
+      {showPrivateKey && (
+        <Button
+          title="Copy to Clipboard"
+          onPress={copyToClipboard}
+          color="#ff6347" // Optional: change color to indicate this action
+        />
+      )}
+    </View>
+  );
+};
+
 const RecentTransactions = ({ transactions }) => {
   const [publicKey, setPublicKey] = useState(null);
 
@@ -326,6 +372,22 @@ const styles = StyleSheet.create({
     color: "#888", // Lighter color to differentiate from the amount
     fontStyle: "italic", // Optional for styling emphasis
     textAlign: "right", // Optional for centering the text
+  },
+  privateKeyContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#2b2b2b",
+    borderRadius: 10,
+  },
+  privateKeyTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  privateKey: {
+    fontSize: 16,
+    color: "#fff",
+    marginTop: 10,
   },
 });
 

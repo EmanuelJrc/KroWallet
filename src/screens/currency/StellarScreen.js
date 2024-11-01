@@ -12,6 +12,7 @@ import {
   Alert,
   Modal,
   Animated,
+  Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import * as StellarSdk from "@stellar/stellar-sdk";
@@ -49,6 +50,15 @@ const StellarScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Define the header background color interpolation
+  const headerBackgroundColor = scrollY.interpolate({
+    inputRange: [0, 100], // Adjust this range based on your header height
+    outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
+    extrapolate: "clamp", // Prevents values from exceeding the defined range
+  });
+
   // Fade and slide animations for opening the modal
   const openModal = () => {
     setModalVisible(true);
@@ -85,7 +95,23 @@ const StellarScreen = () => {
   // Set up header with the info button
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: "Stellar",
+      headerTitle: () => (
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Image
+            source={require("../../../assets/stellar.png")} // Update the path to your image
+            style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
+          />
+          <Text
+            style={{
+              color: isDarkMode ? "#ffffff" : "#000000",
+              fontWeight: "bold",
+              fontSize: 18,
+            }}
+          >
+            Stellar
+          </Text>
+        </View>
+      ),
       headerShown: true,
       headerTransparent: true,
       headerStyle: {
@@ -96,14 +122,19 @@ const StellarScreen = () => {
           <Icon
             name="information-circle-outline"
             size={28}
-            color="white"
+            color={isDarkMode ? "white" : "black"}
             paddingRight={15}
           />
         </TouchableOpacity>
       ),
       headerLeft: () => (
         <TouchableOpacity onPress={() => navigation.navigate("Home")}>
-          <Icon name="arrow-back" size={28} color="white" paddingLeft={15} />
+          <Icon
+            name="arrow-back"
+            size={28}
+            color={isDarkMode ? "white" : "black"}
+            paddingLeft={15}
+          />
         </TouchableOpacity>
       ),
     });
@@ -273,51 +304,6 @@ const StellarScreen = () => {
     }
   };
 
-  const fundNewWallet = async (destination, amount) => {
-    const server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
-    const sourceKeys = StellarSdk.Keypair.fromSecret(secretKey);
-
-    try {
-      // Load the source account
-      const sourceAccount = await server.loadAccount(sourceKeys.publicKey());
-
-      // Build the transaction to fund the new account
-      const fundingTransaction = new StellarSdk.TransactionBuilder(
-        sourceAccount,
-        {
-          fee: StellarSdk.BASE_FEE,
-          networkPassphrase: StellarSdk.Networks.TESTNET,
-        }
-      )
-        .addOperation(
-          StellarSdk.Operation.payment({
-            destination,
-            asset: StellarSdk.Asset.native(),
-            amount: parseFloat(amount).toFixed(2), // Ensure sufficient amount to fund
-          })
-        )
-        .setTimeout(30)
-        .build();
-
-      // Sign the funding transaction
-      fundingTransaction.sign(sourceKeys);
-
-      // Submit the funding transaction
-      const result = await server.submitTransaction(fundingTransaction);
-      console.log("Funding transaction successful:", result);
-      alert("Successfully funded the new wallet!");
-    } catch (error) {
-      console.error("Error submitting funding transaction:", error);
-      console.log("Error Message:", error.message);
-      if (error.response) {
-        console.log("Error Response Data:", error.response.data);
-      }
-      alert(
-        "Funding transaction failed. Please check the details and try again."
-      );
-    }
-  };
-
   // Function to handle the pull-to-refresh action
   const onRefresh = async () => {
     setRefreshing(true); // Start refreshing
@@ -439,190 +425,286 @@ const StellarScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 110, // Adjust based on your header height
+          backgroundColor: headerBackgroundColor,
+          zIndex: 1, // Ensure it sits above other components
+        }}
+      />
       <LinearGradient
-        colors={["#296fc5", "#3d3d3d", "#3d3d3d", "#333333"]}
+        colors={
+          isDarkMode
+            ? ["#296fc5", "#3d3d3d", "#3d3d3d", "#333333"]
+            : ["#296fc5", "#5d97dd", "#ffffff", "#f0f0f0"]
+        }
         style={StyleSheet.absoluteFill}
       />
-
-      <ScrollView
-        style={{ padding: 15, minHeight: 140 }}
+      <Animated.ScrollView
+        style={{ flex: 1 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false } // Use native driver for better performance
+        )}
+        scrollEventThrottle={16} // Update every 16ms
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.container}>
-          <SendNano
-            name={"Stellar"}
-            visible={sendModalVisible}
-            onClose={() => setSendModalVisible(false)}
-            handleSendTransaction={sendTransaction}
-            recipientAddress={destination}
-            setRecipientAddress={setDestination}
-            amountToSend={amount}
-            setAmountToSend={setAmount}
-          />
-
-          <ReceiveNano
-            name={"Stellar"}
-            visible={receiveModalVisible}
-            onClose={() => setReceiveModalVisible(false)}
-            address={publicKey}
-          />
-
-          <Modal transparent visible={modalVisible} onRequestClose={closeModal}>
-            <View style={styles.overlay}>
-              <Animated.View
-                style={[
-                  styles.modalContent,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{ translateY: translateYAnim }],
-                  },
-                ]}
-              >
-                <Text style={styles.modalTitle}>Secret Key</Text>
-                <Text selectable style={styles.secretKeyText}>
-                  {secretKey}
-                </Text>
-                <Button
-                  title="Copy Secret Key"
-                  onPress={() => {
-                    copyToClipboardSecret();
-                  }}
-                />
-
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={deleteWallet}
-                >
-                  <Text style={styles.deleteButtonText}>Delete Wallet</Text>
-                </TouchableOpacity>
-                <Button title="Close" onPress={closeModal} />
-              </Animated.View>
-            </View>
-          </Modal>
-
-          {!walletCreated ? (
-            <>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={generateStellarWallet}
-              >
-                <Text style={styles.buttonText}>Generate Stellar Wallet</Text>
-              </TouchableOpacity>
-
-              <View style={styles.importSection}>
-                <Text style={styles.label}>Import Existing Wallet</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter Secret Key"
-                  value={importSecretKey}
-                  onChangeText={setImportSecretKey}
-                />
-                <Button title="Import Wallet" onPress={importWallet} />
-              </View>
-            </>
-          ) : (
-            <>
-              {balance && (
-                <View style={styles.balanceInfo}>
-                  <Text selectable style={styles.balanceText}>
-                    {balance}
-                  </Text>
-                  <Text style={styles.fiatBalanceText}>
-                    ${fiatBalance ? fiatBalance : "0.00"}
-                  </Text>
-                </View>
-              )}
-              {/* Action Buttons */}
-              <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                  onPress={() => setSendModalVisible(true)}
-                >
-                  <Icon name="send" size={24} color="white" />
-                  <Text style={styles.actionButtonText}>Send</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                  onPress={() => setReceiveModalVisible(true)}
-                >
-                  <Icon name="download" size={24} color="white" />
-                  <Text style={styles.actionButtonText}>Receive</Text>
-                  {/* Modal to display QR code and address */}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                >
-                  <Icon name="cash-outline" size={24} color="white" />
-                  <Text style={styles.actionButtonText}>Buy</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                  onPress={openExplore}
-                >
-                  <Icon name="exit" size={24} color="white" />
-                  <Text style={styles.actionButtonText}>View</Text>
-                </TouchableOpacity>
-              </View>
-
-              <StellarPriceDetail
-                price={price}
-                change={priceChange}
-                percentageChange={percentageChange}
-                chartData={chartData}
+        <View style={{ flex: 1 }}>
+          <ScrollView style={{ padding: 15, minHeight: 140 }}>
+            <View style={styles.container}>
+              <SendNano
+                name={"Stellar"}
+                visible={sendModalVisible}
+                onClose={() => setSendModalVisible(false)}
+                handleSendTransaction={sendTransaction}
+                recipientAddress={destination}
+                setRecipientAddress={setDestination}
+                amountToSend={amount}
+                setAmountToSend={setAmount}
               />
 
-              {transactions.length > 0 && (
-                <View style={styles.transactionHistory}>
-                  <Text style={styles.transactionTitle}>
-                    Transaction History
-                  </Text>
-                  {transactions.map((tx) => {
-                    const isReceived = tx.to === publicKey;
-                    return (
-                      <View
-                        key={tx.id}
+              <ReceiveNano
+                name={"Stellar"}
+                visible={receiveModalVisible}
+                onClose={() => setReceiveModalVisible(false)}
+                address={publicKey}
+              />
+
+              <Modal
+                transparent
+                visible={modalVisible}
+                onRequestClose={closeModal}
+              >
+                <View style={styles.overlay}>
+                  <Animated.View
+                    style={[
+                      styles.modalContent,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: translateYAnim }],
+                      },
+                    ]}
+                  >
+                    <Text style={styles.modalTitle}>Secret Key</Text>
+                    <Text selectable style={styles.secretKeyText}>
+                      {secretKey}
+                    </Text>
+                    <Button
+                      title="Copy Secret Key"
+                      onPress={() => {
+                        copyToClipboardSecret();
+                      }}
+                    />
+
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={deleteWallet}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete Wallet</Text>
+                    </TouchableOpacity>
+                    <Button title="Close" onPress={closeModal} />
+                  </Animated.View>
+                </View>
+              </Modal>
+
+              {!walletCreated ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={generateStellarWallet}
+                  >
+                    <Text style={styles.buttonText}>
+                      Generate Stellar Wallet
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.importSection}>
+                    <Text style={styles.label}>Import Existing Wallet</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter Secret Key"
+                      value={importSecretKey}
+                      onChangeText={setImportSecretKey}
+                    />
+                    <Button title="Import Wallet" onPress={importWallet} />
+                  </View>
+                </>
+              ) : (
+                <>
+                  {balance && (
+                    <View style={styles.balanceInfo}>
+                      <Text selectable style={styles.balanceText}>
+                        {balance}
+                      </Text>
+                      <Text style={styles.fiatBalanceText}>
+                        ${fiatBalance ? fiatBalance : "0.00"}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Action Buttons */}
+                  <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton,
+                        isDarkMode && styles.darkButton,
+                      ]}
+                      onPress={() => setSendModalVisible(true)}
+                    >
+                      <Icon
+                        name="send"
+                        size={24}
+                        color={isDarkMode ? "white" : "black"}
+                      />
+                      <Text
                         style={[
-                          styles.transactionItem,
-                          isReceived
-                            ? styles.receivedTransaction
-                            : styles.sentTransaction,
+                          styles.actionButtonText,
+                          isDarkMode && styles.darkText,
                         ]}
                       >
-                        <Text style={styles.transactionDate}>
-                          {new Date(tx.created_at).toLocaleDateString()}
-                        </Text>
-                        <View style={styles.transactionContent}>
-                          <Text style={styles.transactionType}>
-                            {isReceived ? "Received" : "Sent"}
-                          </Text>
-                          <Text
+                        Send
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton,
+                        isDarkMode && styles.darkButton,
+                      ]}
+                      onPress={() => setReceiveModalVisible(true)}
+                    >
+                      <Icon
+                        name="download"
+                        size={24}
+                        color={isDarkMode ? "white" : "black"}
+                      />
+                      <Text
+                        style={[
+                          styles.actionButtonText,
+                          isDarkMode && styles.darkText,
+                        ]}
+                      >
+                        Receive
+                      </Text>
+                      {/* Modal to display QR code and address */}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton,
+                        isDarkMode && styles.darkButton,
+                      ]}
+                    >
+                      <Icon
+                        name="cash-outline"
+                        size={24}
+                        color={isDarkMode ? "white" : "black"}
+                      />
+                      <Text
+                        style={[
+                          styles.actionButtonText,
+                          isDarkMode && styles.darkText,
+                        ]}
+                      >
+                        Buy
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton,
+                        isDarkMode && styles.darkButton,
+                      ]}
+                      onPress={openExplore}
+                    >
+                      <Icon
+                        name="exit"
+                        size={24}
+                        color={isDarkMode ? "white" : "black"}
+                      />
+                      <Text
+                        style={[
+                          styles.actionButtonText,
+                          isDarkMode && styles.darkText,
+                        ]}
+                      >
+                        View
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <StellarPriceDetail
+                    price={price}
+                    change={priceChange}
+                    percentageChange={percentageChange}
+                    chartData={chartData}
+                  />
+
+                  {transactions.length > 0 && (
+                    <View style={styles.transactionHistory}>
+                      <Text
+                        style={[
+                          styles.transactionTitle,
+                          isDarkMode && styles.darkText,
+                        ]}
+                      >
+                        Transaction History
+                      </Text>
+                      {transactions.map((tx) => {
+                        const isReceived = tx.to === publicKey;
+                        return (
+                          <View
+                            key={tx.id}
                             style={[
-                              styles.transactionAmount,
+                              styles.transactionItem,
+                              isDarkMode && styles.darkButton,
                               isReceived
-                                ? styles.amountReceived
-                                : styles.amountSent,
+                                ? styles.receivedTransaction
+                                : styles.sentTransaction,
                             ]}
                           >
-                            {isReceived ? `+${tx.amount}` : `-${tx.amount}`}{" "}
-                            {tx.asset}
-                          </Text>
-                        </View>
-                        <Text style={styles.transactionAddress}>
-                          {isReceived ? `From: ${tx.from}` : `To: ${tx.to}`}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
+                            <Text style={styles.transactionDate}>
+                              {new Date(tx.created_at).toLocaleDateString()}
+                            </Text>
+                            <View style={styles.transactionContent}>
+                              <Text
+                                style={[
+                                  styles.transactionType,
+                                  isDarkMode && styles.darkText,
+                                ]}
+                              >
+                                {isReceived ? "Received" : "Sent"}
+                              </Text>
+                              <Text
+                                style={[
+                                  styles.transactionAmount,
+                                  isReceived
+                                    ? styles.amountReceived
+                                    : styles.amountSent,
+                                ]}
+                              >
+                                {isReceived ? `+${tx.amount}` : `-${tx.amount}`}{" "}
+                                {tx.asset}
+                              </Text>
+                            </View>
+                            <Text style={styles.transactionAddress}>
+                              {isReceived ? `From: ${tx.from}` : `To: ${tx.to}`}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
 
-              {/* Add more buttons or components for transactions here */}
-            </>
-          )}
+                  {/* Add more buttons or components for transactions here */}
+                </>
+              )}
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 };
@@ -671,10 +753,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   actionButtonText: {
-    color: "white",
+    color: "black",
     fontWeight: "regular",
     fontSize: 16,
     paddingTop: 5,
+  },
+  darkText: {
+    color: "white",
   },
   transactionHistory: {
     marginTop: 20,
@@ -684,10 +769,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#fff",
+    color: "black",
   },
   transactionItem: {
-    backgroundColor: "#2b2b2b",
+    backgroundColor: "#d9d9d9",
     borderRadius: 10,
     padding: 15,
     marginBottom: 10,
@@ -709,7 +794,7 @@ const styles = StyleSheet.create({
   transactionType: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    color: "black",
   },
   transactionAmount: {
     fontSize: 16,
@@ -723,7 +808,7 @@ const styles = StyleSheet.create({
   },
   transactionAddress: {
     fontSize: 14,
-    color: "#ccc",
+    color: "#6a6a6a",
     marginTop: 5,
   },
   container: {
@@ -738,12 +823,16 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   actionButton: {
-    backgroundColor: "#333",
+    backgroundColor: "#d9d9d9",
     width: 70, // Set fixed width
     height: 70, // Set fixed height
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  darkButton: {
+    color: "#fff",
+    backgroundColor: "#333",
   },
   title: {
     fontSize: 24,

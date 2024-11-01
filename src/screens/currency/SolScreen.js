@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Animated,
   Modal,
+  Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import RecentTransactions, {
@@ -19,12 +20,11 @@ import RecentTransactions, {
   sendSolTransaction,
   importWallet,
   fetchTransactions,
+  PrivateKeyDisplay,
 } from "../../services/solana/solanaFunctions";
 import { useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ScrollView } from "react-native-gesture-handler";
-import WalletActionButton from "../../components/WalletActionButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../../styles/solanaStyles";
 import ReceiveNano from "../../components/ReceiveNano";
@@ -51,12 +51,6 @@ export default function SolScreen() {
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
 
-  const handleCreateWallet = async () => {
-    const newWallet = await createWallet();
-    setWallet(newWallet);
-    setWalletCreated(true);
-  };
-
   // Load wallet when the screen is opened
   useEffect(() => {
     const loadWallet = async () => {
@@ -75,7 +69,23 @@ export default function SolScreen() {
   // Set up header with the info button
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: "Solana",
+      headerTitle: () => (
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Image
+            source={require("../../../assets/solana.png")} // Update the path to your image
+            style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
+          />
+          <Text
+            style={{
+              color: isDarkMode ? "#ffffff" : "#000000",
+              fontWeight: "bold",
+              fontSize: 16,
+            }}
+          >
+            Solana
+          </Text>
+        </View>
+      ),
       headerShown: true,
       headerTransparent: true,
       headerStyle: {
@@ -99,17 +109,25 @@ export default function SolScreen() {
     });
   }, [navigation]);
 
+  const handleCreateWallet = async () => {
+    const newWallet = await createWallet();
+    setWallet(newWallet);
+    setWalletCreated(true);
+    setPrivateKey(newWallet.privateKey);
+  };
+
+  const handleImportWallet = async () => {
+    try {
+      const importedWallet = await importWallet(privateKey);
+      setWallet(importedWallet);
+      setWalletCreated(true);
+    } catch (error) {
+      console.error("Failed to import wallet:", error);
+    }
+  };
+
   // Fade and slide animations for opening the modal
   const openModal = async () => {
-    // If privateKey is not set, fetch it from SecureStore
-    if (!privateKey && wallet) {
-      const storedWallet = await SecureStore.getItemAsync("solana_wallet");
-      if (storedWallet) {
-        const parsedWallet = JSON.parse(storedWallet);
-        setPrivateKey(parsedWallet.privateKey);
-      }
-    }
-
     setModalVisible(true);
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -152,16 +170,6 @@ export default function SolScreen() {
 
     fetchData();
   }, [wallet]);
-
-  const handleImportWallet = async () => {
-    try {
-      const importedWallet = await importWallet(privateKey);
-      setWallet(importedWallet);
-      setWalletCreated(true);
-    } catch (error) {
-      console.error("Failed to import wallet:", error);
-    }
-  };
 
   const handleCheckBalance = async () => {
     if (wallet) {
@@ -246,16 +254,14 @@ export default function SolScreen() {
       >
         <View style={styles.container}>
           <View style={styles.balanceSection}>
-            {balance && (
-              <View style={styles.balanceInfo}>
-                <Text selectable style={styles.balanceText}>
-                  {balance} SOL
-                </Text>
-                <Text style={styles.fiatBalanceText}>
-                  ${fiatBalance ? fiatBalance : "0.00"}
-                </Text>
-              </View>
-            )}
+            <View style={styles.balanceInfo}>
+              <Text selectable style={styles.balanceText}>
+                {balance} SOL
+              </Text>
+              <Text style={styles.fiatBalanceText}>
+                ${fiatBalance ? fiatBalance : "0.00"}
+              </Text>
+            </View>
           </View>
 
           {/* Action Buttons */}
@@ -320,16 +326,7 @@ export default function SolScreen() {
                 ]}
               >
                 <Text style={styles.modalTitle}>Private Key</Text>
-                <Text selectable style={styles.secretKeyText}>
-                  {privateKey}
-                </Text>
-                <Button
-                  title="Copy Secret Key"
-                  onPress={() => {
-                    copyToClipboardSecret();
-                  }}
-                />
-
+                <PrivateKeyDisplay />
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={handleDeleteWallet}

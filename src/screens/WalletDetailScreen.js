@@ -38,15 +38,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "center",
+    backgroundColor: "#333",
   },
   label: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
+    color: "#fff",
   },
   text: {
     fontSize: 16,
     marginBottom: 5,
+    color: "#fff",
   },
   button: {
     borderRadius: 10,

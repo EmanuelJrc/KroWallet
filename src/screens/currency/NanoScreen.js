@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Linking,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { wallet, block, tools } from "nanocurrency-web";
@@ -74,6 +75,85 @@ export default function NanoScreen() {
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(address);
     alert("Address copied to clipboard");
+  };
+
+  // Set up header with the info button
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Image
+            source={require("../../../assets/nano.png")} // Update the path to your image
+            style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
+          />
+          <Text
+            style={{
+              color: isDarkMode ? "#ffffff" : "#000000",
+              fontWeight: "bold",
+              fontSize: 16,
+            }}
+          >
+            Nano
+          </Text>
+        </View>
+      ),
+      headerShown: true,
+      headerTransparent: true,
+      headerStyle: {
+        backgroundColor: isDarkMode ? "#333333" : "#ffffff",
+      },
+      headerRight: () => (
+        <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
+          <Icon
+            name="information-circle-outline"
+            size={28}
+            color="white"
+            paddingRight={15}
+            onPress={() => {
+              navigation.navigate("ShowDetail", { mnemonic, privateKey });
+            }}
+          />
+        </TouchableOpacity>
+      ),
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Icon name="arrow-back" size={28} color="white" paddingLeft={15} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
+  // Fade and slide animations for opening the modal
+  const openModal = () => {
+    setModalVisible(true);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Fade and slide animations for closing the modal
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYAnim, {
+        toValue: 50,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setModalVisible(false));
   };
 
   // Fetch transactions for the account
@@ -338,15 +418,6 @@ export default function NanoScreen() {
               >
                 Nano Wallet{" "}
               </Text>
-              <Icon
-                name="information-circle"
-                size={24}
-                color="black"
-                style={styles.detailIcon}
-                onPress={() => {
-                  navigation.navigate("ShowDetail", { mnemonic, privateKey });
-                }}
-              />
             </View>
             {balance !== null && (
               <Text style={[styles.balanceText, isDarkMode && styles.darkText]}>

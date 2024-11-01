@@ -1,6 +1,9 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  header: {
+    paddingTop: 60,
+  },
   container: {
     flexGrow: 2,
     justifyContent: "flex-end",

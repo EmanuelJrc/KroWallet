@@ -17,6 +17,13 @@ const CRYPTOCURRENCY_ICONS = {
   Banano: require("../../assets/banano.png"),
   Solana: require("../../assets/solana.png"),
   Stellar: require("../../assets/stellar.png"),
+  Litecoin: require("../../assets/litecoin.png"),
+  Kava: require("../../assets/kava.png"),
+  Cardano: require("../../assets/cardano.png"),
+  Dash: require("../../assets/dash.png"),
+  Xrp: require("../../assets/xrp.png"),
+  Ethereum: require("../../assets/ethereum.png"),
+  Dogecoin: require("../../assets/dogecoin.png"),
 };
 
 const HomeScreen = ({ navigation }) => {
@@ -34,6 +41,13 @@ const HomeScreen = ({ navigation }) => {
     { name: "Banano", icon: CRYPTOCURRENCY_ICONS.Banano },
     { name: "Solana", icon: CRYPTOCURRENCY_ICONS.Solana },
     { name: "Stellar", icon: CRYPTOCURRENCY_ICONS.Stellar },
+    { name: "Litecoin", icon: CRYPTOCURRENCY_ICONS.Litecoin },
+    { name: "Kava", icon: CRYPTOCURRENCY_ICONS.Kava },
+    { name: "Cardano", icon: CRYPTOCURRENCY_ICONS.Cardano },
+    { name: "Dash", icon: CRYPTOCURRENCY_ICONS.Dash },
+    { name: "Xrp", icon: CRYPTOCURRENCY_ICONS.Xrp },
+    { name: "Ethereum", icon: CRYPTOCURRENCY_ICONS.Ethereum },
+    { name: "Dogecoin", icon: CRYPTOCURRENCY_ICONS.Dogecoin },
   ];
 
   return (

@@ -16,7 +16,14 @@ import BitcoinScreen from "./src/screens/currency/BitcoinScreen";
 import WalletDetailScreen from "./src/screens/WalletDetailScreen";
 import BananoScreen from "./src/screens/currency/BananoScreen";
 import StellarScreen from "./src/screens/currency/StellarScreen";
+import LitecoinScreen from "./src/screens/currency/LitecoinScreen";
+import KavaScreen from "./src/screens/currency/KavaScreen";
 import { ThemeProvider, ThemeContext } from "./src/utils/ThemeContext";
+import CardanoScreen from "./src/screens/currency/CardanoScreen";
+import DashScreen from "./src/screens/currency/DashScreen";
+import XrpScreen from "./src/screens/currency/XrpScreen";
+import EthereumScreen from "./src/screens/currency/EthereumScreen";
+import DogecoinScreen from "./src/screens/currency/DogecoinScreen";
 const Stack = createStackNavigator();
 
 function AppNavigator() {
@@ -76,6 +83,13 @@ function AppNavigator() {
         <Stack.Screen name="Solana" component={SolScreen} />
         <Stack.Screen name="Banano" component={BananoScreen} />
         <Stack.Screen name="Stellar" component={StellarScreen} />
+        <Stack.Screen name="Litecoin" component={LitecoinScreen} />
+        <Stack.Screen name="Kava" component={KavaScreen} />
+        <Stack.Screen name="Cardano" component={CardanoScreen} />
+        <Stack.Screen name="Dash" component={DashScreen} />
+        <Stack.Screen name="Xrp" component={XrpScreen} />
+        <Stack.Screen name="Ethereum" component={EthereumScreen} />
+        <Stack.Screen name="Dogecoin" component={DogecoinScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
