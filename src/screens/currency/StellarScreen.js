@@ -21,10 +21,13 @@ import * as SecureStore from "expo-secure-store";
 import { ThemeContext } from "../../utils/ThemeContext";
 import SendNano from "../../components/SendNano";
 import ReceiveNano from "../../components/ReceiveNano";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import StellarPriceDetail from "../../components/StellarPriceDetail";
+import { styles } from "../../styles/stellarStyles";
+import useModalAnimation from "../../hooks/useModalAnimation";
+import WalletActions from "../../components/WalletActions";
+import GradientBackground from "../../components/GradientBackground";
 
 const StellarScreen = () => {
   const [publicKey, setPublicKey] = useState(null);
@@ -36,7 +39,6 @@ const StellarScreen = () => {
   const [importSecretKey, setImportSecretKey] = useState("");
   const [walletCreated, setWalletCreated] = useState(false);
   const [transactions, setTransactions] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
   const [receiveModalVisible, setReceiveModalVisible] = useState(false);
   const [sendModalVisible, setSendModalVisible] = useState(false);
   const [fiatBalance, setFiatBalance] = useState(null);
@@ -45,9 +47,10 @@ const StellarScreen = () => {
   const [priceChange, setPriceChange] = useState(0);
   const [chartData, setChartData] = useState([]);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateYAnim = useRef(new Animated.Value(50)).current;
   const navigation = useNavigation();
+  const { modalVisible, fadeAnim, translateYAnim, openModal, closeModal } =
+    useModalAnimation();
+
   const { isDarkMode } = useContext(ThemeContext);
 
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -58,39 +61,6 @@ const StellarScreen = () => {
     outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
     extrapolate: "clamp", // Prevents values from exceeding the defined range
   });
-
-  // Fade and slide animations for opening the modal
-  const openModal = () => {
-    setModalVisible(true);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  // Fade and slide animations for closing the modal
-  const closeModal = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 50,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setModalVisible(false));
-  };
 
   // Set up header with the info button
   useEffect(() => {
@@ -436,14 +406,7 @@ const StellarScreen = () => {
           zIndex: 1, // Ensure it sits above other components
         }}
       />
-      <LinearGradient
-        colors={
-          isDarkMode
-            ? ["#296fc5", "#3d3d3d", "#3d3d3d", "#333333"]
-            : ["#296fc5", "#5d97dd", "#ffffff", "#f0f0f0"]
-        }
-        style={StyleSheet.absoluteFill}
-      />
+      <GradientBackground isDarkMode={isDarkMode} />
       <Animated.ScrollView
         style={{ flex: 1 }}
         onScroll={Animated.event(
@@ -548,92 +511,12 @@ const StellarScreen = () => {
                     </View>
                   )}
                   {/* Action Buttons */}
-                  <View style={styles.actionButtonsContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        isDarkMode && styles.darkButton,
-                      ]}
-                      onPress={() => setSendModalVisible(true)}
-                    >
-                      <Icon
-                        name="send"
-                        size={24}
-                        color={isDarkMode ? "white" : "black"}
-                      />
-                      <Text
-                        style={[
-                          styles.actionButtonText,
-                          isDarkMode && styles.darkText,
-                        ]}
-                      >
-                        Send
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        isDarkMode && styles.darkButton,
-                      ]}
-                      onPress={() => setReceiveModalVisible(true)}
-                    >
-                      <Icon
-                        name="download"
-                        size={24}
-                        color={isDarkMode ? "white" : "black"}
-                      />
-                      <Text
-                        style={[
-                          styles.actionButtonText,
-                          isDarkMode && styles.darkText,
-                        ]}
-                      >
-                        Receive
-                      </Text>
-                      {/* Modal to display QR code and address */}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        isDarkMode && styles.darkButton,
-                      ]}
-                    >
-                      <Icon
-                        name="cash-outline"
-                        size={24}
-                        color={isDarkMode ? "white" : "black"}
-                      />
-                      <Text
-                        style={[
-                          styles.actionButtonText,
-                          isDarkMode && styles.darkText,
-                        ]}
-                      >
-                        Buy
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        isDarkMode && styles.darkButton,
-                      ]}
-                      onPress={openExplore}
-                    >
-                      <Icon
-                        name="exit"
-                        size={24}
-                        color={isDarkMode ? "white" : "black"}
-                      />
-                      <Text
-                        style={[
-                          styles.actionButtonText,
-                          isDarkMode && styles.darkText,
-                        ]}
-                      >
-                        View
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  <WalletActions
+                    isDarkMode={isDarkMode}
+                    setSendModalVisible={setSendModalVisible}
+                    setReceiveModalVisible={setReceiveModalVisible}
+                    openExplore={openExplore}
+                  />
 
                   <StellarPriceDetail
                     price={price}
@@ -697,8 +580,6 @@ const StellarScreen = () => {
                       })}
                     </View>
                   )}
-
-                  {/* Add more buttons or components for transactions here */}
                 </>
               )}
             </View>
@@ -708,177 +589,5 @@ const StellarScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "90%",
-    padding: 20,
-    backgroundColor: "#333333",
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 10,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "white",
-  },
-  secretKeyText: {
-    fontSize: 16,
-    marginBottom: 15,
-    textAlign: "center",
-    color: "white",
-  },
-  deleteButton: {
-    backgroundColor: "#ff4d4d",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginTop: 15,
-  },
-  deleteButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  balanceInfo: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  actionButtonText: {
-    color: "black",
-    fontWeight: "regular",
-    fontSize: 16,
-    paddingTop: 5,
-  },
-  darkText: {
-    color: "white",
-  },
-  transactionHistory: {
-    marginTop: 20,
-    width: "100%",
-  },
-  transactionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "black",
-  },
-  transactionItem: {
-    backgroundColor: "#d9d9d9",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  transactionDate: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 5,
-  },
-  transactionContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  transactionType: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "black",
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  amountReceived: {
-    color: "green",
-  },
-  amountSent: {
-    color: "red",
-  },
-  transactionAddress: {
-    fontSize: 14,
-    color: "#6a6a6a",
-    marginTop: 5,
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    paddingTop: 60,
-  },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 20,
-  },
-  actionButton: {
-    backgroundColor: "#d9d9d9",
-    width: 70, // Set fixed width
-    height: 70, // Set fixed height
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  darkButton: {
-    color: "#fff",
-    backgroundColor: "#333",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "#0078FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-  },
-  walletInfo: {
-    marginTop: 30,
-    width: "100%",
-  },
-  balanceText: {
-    color: "#ffffff",
-    fontSize: 42,
-    fontWeight: "bold",
-    marginTop: 20,
-    textAlign: "center",
-  },
-  fiatBalanceText: {
-    color: "#adadad",
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  label: {
-    fontWeight: "bold",
-    marginTop: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    marginTop: 5,
-    width: "80%",
-    height: 100,
-  },
-});
 
 export default StellarScreen;

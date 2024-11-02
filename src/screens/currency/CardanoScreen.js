@@ -18,6 +18,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { ThemeContext } from "../../utils/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import WalletActions from "../../components/WalletActions";
 
 const CardanoScreen = () => {
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
@@ -182,80 +183,12 @@ const CardanoScreen = () => {
                 </Text>
               </View>
               {/* Action Buttons */}
-              <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                  onPress={() => setSendModalVisible(true)}
-                >
-                  <Icon
-                    name="send"
-                    size={24}
-                    color={isDarkMode ? "white" : "black"}
-                  />
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      isDarkMode && styles.darkText,
-                    ]}
-                  >
-                    Send
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                  onPress={() => setReceiveModalVisible(true)}
-                >
-                  <Icon
-                    name="download"
-                    size={24}
-                    color={isDarkMode ? "white" : "black"}
-                  />
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      isDarkMode && styles.darkText,
-                    ]}
-                  >
-                    Receive
-                  </Text>
-                  {/* Modal to display QR code and address */}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                >
-                  <Icon
-                    name="cash-outline"
-                    size={24}
-                    color={isDarkMode ? "white" : "black"}
-                  />
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      isDarkMode && styles.darkText,
-                    ]}
-                  >
-                    Buy
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, isDarkMode && styles.darkButton]}
-                  onPress={openExplore}
-                >
-                  <Icon
-                    name="exit"
-                    size={24}
-                    color={isDarkMode ? "white" : "black"}
-                  />
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      isDarkMode && styles.darkText,
-                    ]}
-                  >
-                    View
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <WalletActions
+                isDarkMode={isDarkMode}
+                setSendModalVisible={openExplore}
+                setReceiveModalVisible={openExplore}
+                openExplore={openExplore}
+              />
             </View>
           </ScrollView>
         </View>

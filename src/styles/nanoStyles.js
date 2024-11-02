@@ -1,6 +1,32 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    padding: 20,
+    backgroundColor: "#333333",
+    borderRadius: 10,
+    alignItems: "center",
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 15,
+    color: "white",
+  },
+  secretKeyText: {
+    fontSize: 16,
+    marginBottom: 15,
+    textAlign: "center",
+    color: "white",
+  },
   header: {
     paddingTop: 60,
   },
@@ -14,6 +40,10 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     justifyContent: "center",
     alignSelf: "center",
+    marginBottom: 20,
+  },
+  balanceContainer: {
+    marginTop: 20,
     marginBottom: 20,
   },
   input: {
@@ -40,7 +70,6 @@ export const styles = StyleSheet.create({
   },
   darkText: {
     color: "#ffffff",
-    fontSize: 24,
     marginBottom: 10,
   },
   modalView: {
@@ -156,7 +185,7 @@ export const styles = StyleSheet.create({
   },
   balanceText: {
     color: "#000",
-    fontSize: 24,
+    fontSize: 42,
     fontWeight: "bold",
     marginVertical: 20,
     textAlign: "center",
@@ -169,18 +198,27 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginTop: 10,
+    width: "100%",
   },
-
+  transactionHistory: {
+    marginTop: 20,
+    width: "100%",
+  },
+  fiatBalanceText: {
+    color: "#adadad",
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
   transactionContainer: {
-    marginVertical: 5,
-    padding: 10,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 5,
+    backgroundColor: "#d9d9d9",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   transactionHeader: {
     flexDirection: "row",

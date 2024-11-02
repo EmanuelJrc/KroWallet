@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   StatusBar,
   Linking,
   Image,
+  Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { wallet, block, tools } from "nanocurrency-web";
@@ -38,6 +39,9 @@ import SendNano from "../../components/SendNano";
 import ReceiveNano from "../../components/ReceiveNano";
 import WalletActionButton from "../../components/WalletActionButton";
 import TransactionList from "../../components/NanoTransactionList";
+import WalletActions from "../../components/WalletActions";
+import useModalAnimation from "../../hooks/useModalAnimation";
+import GradientBackground from "../../components/GradientBackground";
 
 const NODE_URL = "https://rpc.nano.to";
 
@@ -69,11 +73,30 @@ export default function NanoScreen() {
   const [receiveAmount, setReceiveAmount] = useState("");
 
   const navigation = useNavigation(); // Use navigation hook
+  const { modalVisible, fadeAnim, translateYAnim, openModal, closeModal } =
+    useModalAnimation();
 
   const { isDarkMode } = useContext(ThemeContext);
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Define the header background color interpolation
+  const headerBackgroundColor = scrollY.interpolate({
+    inputRange: [0, 100], // Adjust this range based on your header height
+    outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
+    extrapolate: "clamp", // Prevents values from exceeding the defined range
+  });
+
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(address);
+    alert("Address copied to clipboard");
+  };
+  const copyPrivateKeyToClipboard = async () => {
+    await Clipboard.setStringAsync(privateKey);
+    alert("Address copied to clipboard");
+  };
+  const copyMnemonicToClipboard = async () => {
+    await Clipboard.setStringAsync(mnemonic);
     alert("Address copied to clipboard");
   };
 
@@ -82,19 +105,24 @@ export default function NanoScreen() {
     navigation.setOptions({
       headerTitle: () => (
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image
-            source={require("../../../assets/nano.png")} // Update the path to your image
-            style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
-          />
-          <Text
-            style={{
-              color: isDarkMode ? "#ffffff" : "#000000",
-              fontWeight: "bold",
-              fontSize: 16,
-            }}
+          <TouchableOpacity
+            style={{ flexDirection: "row", alignItems: "center" }}
+            onPress={() => setDerivedAccountsModalVisible(true)}
           >
-            Nano
-          </Text>
+            <Image
+              source={require("../../../assets/nano.png")} // Update the path to your image
+              style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
+            />
+            <Text
+              style={{
+                color: isDarkMode ? "#ffffff" : "#000000",
+                fontWeight: "bold",
+                fontSize: 16,
+              }}
+            >
+              Nano
+            </Text>
+          </TouchableOpacity>
         </View>
       ),
       headerShown: true,
@@ -109,9 +137,6 @@ export default function NanoScreen() {
             size={28}
             color="white"
             paddingRight={15}
-            onPress={() => {
-              navigation.navigate("ShowDetail", { mnemonic, privateKey });
-            }}
           />
         </TouchableOpacity>
       ),
@@ -122,39 +147,6 @@ export default function NanoScreen() {
       ),
     });
   }, [navigation]);
-
-  // Fade and slide animations for opening the modal
-  const openModal = () => {
-    setModalVisible(true);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  // Fade and slide animations for closing the modal
-  const closeModal = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 50,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setModalVisible(false));
-  };
 
   // Fetch transactions for the account
   const fetchTransactions = async () => {
@@ -402,167 +394,212 @@ export default function NanoScreen() {
   };
 
   return (
-    <LinearGradient colors={["#296fc5", "#3500A2"]} flex={1}>
-      <ScrollView
-        style={{ padding: 15, minHeight: 140 }}
+    <View style={{ flex: 1 }}>
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 110, // Adjust based on your header height
+          backgroundColor: headerBackgroundColor,
+          zIndex: 1, // Ensure it sits above other components
+        }}
+      />
+      <GradientBackground isDarkMode={isDarkMode} />
+      <Animated.ScrollView
+        style={{ flex: 1 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false } // Use native driver for better performance
+        )}
+        scrollEventThrottle={16} // Update every 16ms
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         <View style={{ flex: 1 }}>
-          <View style={styles.container}>
-            <View style={styles.header}>
-              <Text
-                style={styles.title}
-                onPress={() => setDerivedAccountsModalVisible(true)}
+          <ScrollView style={{ padding: 15, minHeight: 140 }}>
+            <View style={[styles.container, { paddingTop: 60 }]}>
+              {balance !== null && (
+                <View style={styles.balanceContainer}>
+                  <Text
+                    style={[styles.balanceText, isDarkMode && styles.darkText]}
+                  >
+                    {balance} NANO
+                  </Text>
+                  <Text style={styles.fiatBalanceText}>$0.00</Text>
+                </View>
+              )}
+
+              {receivingStatus && (
+                <Text style={styles.receivingStatusText}>
+                  {receivingStatus}
+                </Text>
+              )}
+              <WalletActions
+                isDarkMode={isDarkMode}
+                setSendModalVisible={setSendModalVisible}
+                setReceiveModalVisible={setReceiveModalVisible}
+                openExplore={openExplore}
+              />
+            </View>
+
+            <View style={styles.container}>
+              {/* Add the SendCryptoModule */}
+              {/* <SendCryptoModule address={address} privateKey={privateKey} /> */}
+
+              {/* Modal to display QR code and address */}
+              <ReceiveNano
+                visible={receiveModalVisible}
+                onClose={() => setReceiveModalVisible(false)}
+                address={address}
+                onReceive={handleReceiveNano}
+                receivingStatus={receivingStatus}
+              />
+
+              <Modal
+                transparent
+                visible={modalVisible}
+                onRequestClose={closeModal}
               >
-                Nano Wallet{" "}
-              </Text>
-            </View>
-            {balance !== null && (
-              <Text style={[styles.balanceText, isDarkMode && styles.darkText]}>
-                {balance} NANO
-              </Text>
-            )}
-            {receivingStatus && (
-              <Text style={styles.receivingStatusText}>{receivingStatus}</Text>
-            )}
-            <View
-              style={{
-                justifyContent: "space-around",
-                flex: 1,
-                flexDirection: "row",
-                marginBottom: 20,
-                paddingVertical: 16,
-              }}
-            >
-              <WalletActionButton
-                iconName="arrow-up-circle"
-                text="Send"
-                onPress={() => setSendModalVisible(true)}
+                <View style={styles.overlay}>
+                  <Animated.View
+                    style={[
+                      styles.modalContent,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: translateYAnim }],
+                      },
+                    ]}
+                  >
+                    <Text style={styles.modalTitle}>Mnemonic</Text>
+                    <Text selectable style={styles.secretKeyText}>
+                      {mnemonic}
+                    </Text>
+                    <Button
+                      title="Copy Mnemonic"
+                      onPress={() => {
+                        copyMnemonicToClipboard();
+                      }}
+                    />
+                    <Text style={styles.modalTitle}>Private Key</Text>
+                    <Text selectable style={styles.secretKeyText}>
+                      {privateKey}
+                    </Text>
+                    <Button
+                      title="Copy Private Key"
+                      onPress={() => {
+                        copyPrivateKeyToClipboard();
+                      }}
+                    />
+
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={deleteWallet}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete Wallet</Text>
+                    </TouchableOpacity>
+                    <Button title="Close" onPress={closeModal} />
+                  </Animated.View>
+                </View>
+              </Modal>
+
+              {/* Modal to send Nano */}
+              <SendNano
+                visible={sendModalVisible}
+                onClose={() => setSendModalVisible(false)}
+                handleSendTransaction={handleSendTransaction}
+                recipientAddress={recipientAddress}
+                setRecipientAddress={setRecipientAddress}
+                amountToSend={amountToSend}
+                setAmountToSend={setAmountToSend}
+                transactionStatus={transactionStatus}
               />
 
-              <WalletActionButton
-                iconName="arrow-down-circle"
-                text="Receive"
-                onPress={() => setReceiveModalVisible(true)}
-              />
+              {/* Modal for Derived Accounts */}
+              <Modal
+                animationType="slide"
+                transparent={true}
+                visible={derivedAccountsModalVisible}
+                onRequestClose={() => setDerivedAccountsModalVisible(false)}
+              >
+                <View style={styles.modalContainer}>
+                  <View style={styles.modalView}>
+                    <Text style={styles.modalText}>Derived Accounts</Text>
 
-              <WalletActionButton
-                iconName="wallet"
-                text="Buy"
-                onPress={() => {}}
-              />
+                    {/* Display all derived accounts */}
+                    {accounts.map((account, index) => (
+                      <View key={index} style={styles.accountContainer}>
+                        <Text>Account {index + 1}</Text>
+                        <Text>Address: {account.address}</Text>
+                      </View>
+                    ))}
 
-              <WalletActionButton
-                iconName="exit"
-                text="View"
-                onPress={openExplore}
-              />
-            </View>
-          </View>
+                    {/* Input to derive new accounts */}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Number of accounts to derive"
+                      keyboardType="numeric"
+                      onChangeText={(text) =>
+                        setNumberOfAccounts(parseInt(text) || 1)
+                      }
+                    />
+                    <Button
+                      title={`Derive ${numberOfAccounts} More Accounts`}
+                      onPress={() =>
+                        deriveAccounts(
+                          accounts.length,
+                          accounts.length + numberOfAccounts
+                        )
+                      }
+                    />
 
-          <View style={styles.container}>
-            {/* Add the SendCryptoModule */}
-            {/* <SendCryptoModule address={address} privateKey={privateKey} /> */}
+                    {/* Close the modal */}
+                    <Pressable
+                      style={[styles.button, styles.buttonClose]}
+                      onPress={() => setDerivedAccountsModalVisible(false)}
+                    >
+                      <Text style={styles.textStyle}>Close</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </Modal>
 
-            {/* Modal to display QR code and address */}
-            <ReceiveNano
-              visible={receiveModalVisible}
-              onClose={() => setReceiveModalVisible(false)}
-              address={address}
-              onReceive={handleReceiveNano}
-              receivingStatus={receivingStatus}
-            />
+              {!walletCreated ? (
+                <>
+                  <Button
+                    title="Generate New Wallet"
+                    onPress={generateWallet}
+                  />
 
-            {/* Modal to send Nano */}
-            <SendNano
-              visible={sendModalVisible}
-              onClose={() => setSendModalVisible(false)}
-              handleSendTransaction={handleSendTransaction}
-              recipientAddress={recipientAddress}
-              setRecipientAddress={setRecipientAddress}
-              amountToSend={amountToSend}
-              setAmountToSend={setAmountToSend}
-              transactionStatus={transactionStatus}
-            />
-
-            {/* Modal for Derived Accounts */}
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={derivedAccountsModalVisible}
-              onRequestClose={() => setDerivedAccountsModalVisible(false)}
-            >
-              <View style={styles.modalContainer}>
-                <View style={styles.modalView}>
-                  <Text style={styles.modalText}>Derived Accounts</Text>
-
-                  {/* Display all derived accounts */}
-                  {accounts.map((account, index) => (
-                    <View key={index} style={styles.accountContainer}>
-                      <Text>Account {index + 1}</Text>
-                      <Text>Address: {account.address}</Text>
-                    </View>
-                  ))}
-
-                  {/* Input to derive new accounts */}
+                  <Text style={styles.label}>
+                    Or import an existing wallet:
+                  </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Number of accounts to derive"
-                    keyboardType="numeric"
-                    onChangeText={(text) =>
-                      setNumberOfAccounts(parseInt(text) || 1)
-                    }
+                    placeholder="Enter mnemonic phrase"
+                    onChangeText={(text) => setInputMnemonic(text)}
+                    value={inputMnemonic}
                   />
+                  <Button title="Import Wallet" onPress={importWallet} />
                   <Button
-                    title={`Derive ${numberOfAccounts} More Accounts`}
-                    onPress={() =>
-                      deriveAccounts(
-                        accounts.length,
-                        accounts.length + numberOfAccounts
-                      )
-                    }
+                    title="Import Wallet Legacy"
+                    onPress={importWalletLegacy}
                   />
-
-                  {/* Close the modal */}
-                  <Pressable
-                    style={[styles.button, styles.buttonClose]}
-                    onPress={() => setDerivedAccountsModalVisible(false)}
-                  >
-                    <Text style={styles.textStyle}>Close</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </Modal>
-
-            {!walletCreated ? (
-              <>
-                <Button title="Generate New Wallet" onPress={generateWallet} />
-
-                <Text style={styles.label}>Or import an existing wallet:</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter mnemonic phrase"
-                  onChangeText={(text) => setInputMnemonic(text)}
-                  value={inputMnemonic}
-                />
-                <Button title="Import Wallet" onPress={importWallet} />
-                <Button
-                  title="Import Wallet Legacy"
-                  onPress={importWalletLegacy}
-                />
-              </>
-            ) : (
-              <>
-                <TransactionList transactions={transactions} />
-
-                <Button title="Delete Wallet" onPress={deleteWallet} />
-              </>
-            )}
-          </View>
+                </>
+              ) : (
+                <>
+                  <TransactionList
+                    transactions={transactions}
+                    userAddress={address}
+                  />
+                </>
+              )}
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
-    </LinearGradient>
+      </Animated.ScrollView>
+    </View>
   );
 }

@@ -30,6 +30,7 @@ import { styles } from "../../styles/solanaStyles";
 import ReceiveNano from "../../components/ReceiveNano";
 import { ThemeContext } from "../../utils/ThemeContext";
 import SendNano from "../../components/SendNano";
+import WalletActions from "../../components/WalletActions";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
@@ -264,37 +265,12 @@ export default function SolScreen() {
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={[styles.actionButton, isDarkMode && styles.darkButton]}
-              onPress={() => setSendModalVisible(true)}
-            >
-              <Icon name="send" size={24} color="white" />
-              <Text style={styles.actionButtonText}>Send</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, isDarkMode && styles.darkButton]}
-              onPress={() => setReceiveModalVisible(true)}
-            >
-              <Icon name="download" size={24} color="white" />
-              <Text style={styles.actionButtonText}>Receive</Text>
-              {/* Modal to display QR code and address */}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, isDarkMode && styles.darkButton]}
-            >
-              <Icon name="cash-outline" size={24} color="white" />
-              <Text style={styles.actionButtonText}>Buy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, isDarkMode && styles.darkButton]}
-              onPress={openExplore}
-            >
-              <Icon name="exit" size={24} color="white" />
-              <Text style={styles.actionButtonText}>View</Text>
-            </TouchableOpacity>
-          </View>
+          <WalletActions
+            isDarkMode={isDarkMode}
+            setSendModalVisible={setSendModalVisible}
+            setReceiveModalVisible={setReceiveModalVisible}
+            openExplore={openExplore}
+          />
 
           <SendNano
             name={"Solana"}
