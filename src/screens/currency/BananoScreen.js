@@ -42,6 +42,7 @@ import { ThemeContext } from "../../utils/ThemeContext";
 import WalletActions from "../../components/WalletActions";
 import useModalAnimation from "../../hooks/useModalAnimation";
 import GradientBackground from "../../components/GradientBackground";
+import BananoTransactionList from "../../components/BananoTransactionList";
 
 const NODE_URL = "https://nodes.nanswap.com/BAN";
 
@@ -123,6 +124,7 @@ export default function BananoScreen() {
       ),
       headerShown: true,
       headerTransparent: true,
+      headerMode: "float",
       headerStyle: {
         backgroundColor: isDarkMode ? "#333333" : "#ffffff",
       },
@@ -587,7 +589,7 @@ export default function BananoScreen() {
                 </>
               ) : (
                 <>
-                  <TransactionList
+                  <BananoTransactionList
                     transactions={transactions}
                     userAddress={address}
                   />

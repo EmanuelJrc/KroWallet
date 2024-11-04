@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useRef } from "react";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -9,7 +9,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import NanoScreen from "./src/screens/currency/NanoScreen";
 import SolScreen from "./src/screens/currency/SolScreen";
 import SettingScreen from "./src/screens/SettingScreen";
-import { View, Button, StyleSheet } from "react-native";
+import { View, Button, StyleSheet, Animated, Text } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
 import AddCryptoScreen from "./src/screens/AddCryptoScreen";
 import BitcoinScreen from "./src/screens/currency/BitcoinScreen";
@@ -24,10 +24,20 @@ import DashScreen from "./src/screens/currency/DashScreen";
 import XrpScreen from "./src/screens/currency/XrpScreen";
 import EthereumScreen from "./src/screens/currency/EthereumScreen";
 import DogecoinScreen from "./src/screens/currency/DogecoinScreen";
+import BnbScreen from "./src/screens/currency/BnbScreen";
 const Stack = createStackNavigator();
 
 function AppNavigator() {
   const { isDarkMode } = useContext(ThemeContext);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Define the header background color interpolation
+  const headerBackgroundColor = scrollY.interpolate({
+    inputRange: [0, 100], // Adjust this range based on your header height
+    outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
+    extrapolate: "clamp", // Prevents values from exceeding the defined range
+  });
 
   return (
     <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
@@ -44,7 +54,22 @@ function AppNavigator() {
           name="Home"
           component={HomeScreen}
           options={({ navigation }) => ({
-            title: "Home", // Centered Title
+            headerTitle: () => (
+              <Text
+                style={{
+                  color: isDarkMode ? "#ffffff" : "#000000",
+                  fontWeight: "bold",
+                  fontSize: 26,
+                }}
+              >
+                KroWallet
+              </Text>
+            ), // Centered Title
+            headerShown: true,
+            headerTransparent: true,
+            headerStyle: {
+              backgroundColor: isDarkMode ? "#333333" : "#ffffff",
+            },
             headerLeft: () => (
               <Icon
                 name="settings-outline"
@@ -87,9 +112,10 @@ function AppNavigator() {
         <Stack.Screen name="Kava" component={KavaScreen} />
         <Stack.Screen name="Cardano" component={CardanoScreen} />
         <Stack.Screen name="Dash" component={DashScreen} />
-        <Stack.Screen name="Xrp" component={XrpScreen} />
+        <Stack.Screen name="XRP" component={XrpScreen} />
         <Stack.Screen name="Ethereum" component={EthereumScreen} />
         <Stack.Screen name="Dogecoin" component={DogecoinScreen} />
+        <Stack.Screen name="BNB" component={BnbScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -84,6 +84,7 @@ const StellarScreen = () => {
       ),
       headerShown: true,
       headerTransparent: true,
+      headerMode: "float",
       headerStyle: {
         backgroundColor: isDarkMode ? "#333333" : "#ffffff",
       },

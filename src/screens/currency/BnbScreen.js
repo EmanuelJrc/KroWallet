@@ -30,11 +30,11 @@ import { ethers } from "ethers";
 import * as SecureStore from "expo-secure-store";
 import ReceiveNano from "../../components/ReceiveNano";
 import SendNano from "../../components/SendNano";
-import WalletTransactionHistory from "../../services/ethereum/transactionList";
+import WalletTransactionHistory from "../../services/bnb/transactionList";
 import axios from "axios";
 import GradientBackground from "../../components/GradientBackground";
 
-const EthereumScreen = () => {
+const BnbScreen = () => {
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
   const [balance, setBalance] = useState(null);
   const [wallet, setWallet] = useState(null);
@@ -74,7 +74,7 @@ const EthereumScreen = () => {
       headerTitle: () => (
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
-            source={require("../../../assets/ethereum.png")} // Update the path to your image
+            source={require("../../../assets/bnb.png")} // Update the path to your image
             style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
           />
           <Text
@@ -84,7 +84,7 @@ const EthereumScreen = () => {
               fontSize: 18,
             }}
           >
-            Ethereum
+            BNB
           </Text>
         </View>
       ),
@@ -126,7 +126,7 @@ const EthereumScreen = () => {
     const initializeProvider = async () => {
       try {
         const initProvider = new ethers.JsonRpcProvider(
-          `https://holesky.infura.io/v3/${process.env.EXPO_PUBLIC_ETHER_API_KEY}`
+          `https://bsc-mainnet.infura.io/v3/${process.env.EXPO_PUBLIC_ETHER_API_KEY}`
         );
 
         // Test the provider connection
@@ -142,7 +142,7 @@ const EthereumScreen = () => {
         console.error("Error initializing provider:", error);
         Alert.alert(
           "Connection Error",
-          "Failed to connect to Ethereum network. Please check your internet connection and API key."
+          "Failed to connect to Binance network. Please check your internet connection and API key."
         );
       }
     };
@@ -152,11 +152,9 @@ const EthereumScreen = () => {
 
   // Function to load wallet if it exists or create a new one if it doesn't
   const loadOrCreateWallet = async () => {
-    const storedMnemonic = await SecureStore.getItemAsync("ethereumMnemonic");
-    const storedAddress = await SecureStore.getItemAsync("ethereumAddress");
-    const storedPrivateKey = await SecureStore.getItemAsync(
-      "ethereumPrivateKey"
-    );
+    const storedMnemonic = await SecureStore.getItemAsync("bnbMnemonic");
+    const storedAddress = await SecureStore.getItemAsync("bnbAddress");
+    const storedPrivateKey = await SecureStore.getItemAsync("bnbPrivateKey");
 
     if (storedMnemonic && storedAddress && storedPrivateKey) {
       // Wallet exists, load it
@@ -173,9 +171,9 @@ const EthereumScreen = () => {
 
   const deleteWallet = async () => {
     try {
-      await SecureStore.deleteItemAsync("ethereumMnemonic");
-      await SecureStore.deleteItemAsync("ethereumAddress");
-      await SecureStore.deleteItemAsync("ethereumPrivateKey");
+      await SecureStore.deleteItemAsync("bnbMnemonic");
+      await SecureStore.deleteItemAsync("bnbAddress");
+      await SecureStore.deleteItemAsync("bnbPrivateKey");
       setMnemonic(null);
       setPrivateKey(null);
       setAddress(null);
@@ -189,7 +187,8 @@ const EthereumScreen = () => {
   useEffect(() => {
     // Initialize the provider (using ethers default provider)
     const initProvider = new ethers.JsonRpcProvider(
-      "https://holesky.infura.io/v3/" + process.env.EXPO_PUBLIC_ETHER_API_KEY // replace with your own Infura/Alchemy endpoint
+      "https://bsc-mainnet.infura.io/v3/" +
+        process.env.EXPO_PUBLIC_ETHER_API_KEY // replace with your own Infura/Alchemy endpoint
     );
     setProvider(initProvider);
 
@@ -277,9 +276,9 @@ const EthereumScreen = () => {
   // Function to save wallet details to SecureStore
   const saveWalletToSecureStore = async (mnemonic, address, privateKey) => {
     try {
-      await SecureStore.setItemAsync("ethereumMnemonic", mnemonic);
-      await SecureStore.setItemAsync("ethereumAddress", address);
-      await SecureStore.setItemAsync("ethereumPrivateKey", privateKey);
+      await SecureStore.setItemAsync("bnbMnemonic", mnemonic);
+      await SecureStore.setItemAsync("bnbAddress", address);
+      await SecureStore.setItemAsync("bnbPrivateKey", privateKey);
       console.log("Wallet details saved securely.");
     } catch (error) {
       console.error("Error saving wallet:", error);
@@ -292,7 +291,7 @@ const EthereumScreen = () => {
     try {
       if (!provider) {
         const newProvider = new ethers.JsonRpcProvider(
-          `https://holesky.infura.io/v3/${process.env.EXPO_PUBLIC_ETHER_API_KEY}`
+          `https://bsc-mainnet.infura.io/v3/${process.env.EXPO_PUBLIC_ETHER_API_KEY}`
         );
         await newProvider.getNetwork(); // Test connection
         setProvider(newProvider);
@@ -314,16 +313,16 @@ const EthereumScreen = () => {
 
   const openExplore = async () => {
     try {
-      Linking.openURL("https://etherscan.io/address/" + address);
+      Linking.openURL("https://bscscan.com/address/" + address);
     } catch (error) {
-      console.log("https://etherscan.io/address/" + address);
+      console.log("https://bscscan.com/address/" + address);
     }
   };
 
   const fetchCurrentPrice = async () => {
     try {
       const response = await axios.get(
-        "https://api.coinlore.net/api/ticker/?id=80"
+        "https://api.coinlore.net/api/ticker/?id=2710"
       );
       const price = parseFloat(response.data[0].price_usd); // Get price_usd and convert to float
       const percentageChange = parseFloat(response.data[0].percent_change_24h);
@@ -362,7 +361,7 @@ const EthereumScreen = () => {
       }
       try {
         const provider = new ethers.JsonRpcProvider(
-          "https://holesky.infura.io/v3/" +
+          "https://bsc-mainnet.infura.io/v3/" +
             process.env.EXPO_PUBLIC_ETHER_API_KEY // replace with your own Infura/Alchemy endpoint
         );
         const initializedWallet = new ethers.Wallet(privateKey, provider);
@@ -376,7 +375,7 @@ const EthereumScreen = () => {
     initializeWallet();
   }, [privateKey]);
 
-  async function sendEthereum(wallet, toAddress, amountInEther) {
+  async function sendBnb(wallet, toAddress, amountInEther) {
     if (!wallet) {
       throw new Error("Wallet is not initialized");
     }
@@ -396,7 +395,7 @@ const EthereumScreen = () => {
     try {
       // Ensure a valid address format
       if (!ethers.isAddress(toAddress)) {
-        throw new Error("Invalid Ethereum address");
+        throw new Error("Invalid Binance address");
       }
 
       // Convert the amount from Ether to Wei
@@ -407,7 +406,7 @@ const EthereumScreen = () => {
       console.log(
         "Current wallet balance:",
         ethers.formatEther(balance),
-        "ETH"
+        "BNB"
       );
 
       // Estimate gas
@@ -425,7 +424,7 @@ const EthereumScreen = () => {
         const requiredBalance = ethers.formatEther(totalCost);
         const currentBalance = ethers.formatEther(balance);
         throw new Error(
-          `Insufficient funds. Required: ${requiredBalance} ETH (including gas), Available: ${currentBalance} ETH`
+          `Insufficient funds. Required: ${requiredBalance} BNB (including gas), Available: ${currentBalance} BNB`
         );
       }
 
@@ -489,10 +488,10 @@ const EthereumScreen = () => {
   }
 
   // Modified transaction handler
-  const handleSendEthereumTransaction = async () => {
+  const handleSendBnbTransaction = async () => {
     console.log("Initiating transaction...");
     console.log("Recipient:", recipient);
-    console.log("Amount:", amount, "ETH");
+    console.log("Amount:", amount, "BNB");
 
     try {
       if (!wallet?.provider) {
@@ -518,7 +517,7 @@ const EthereumScreen = () => {
         "Your transaction is being processed. Please wait..."
       );
 
-      const receipt = await sendEthereum(wallet, recipient, amount);
+      const receipt = await sendBnb(wallet, recipient, amount);
 
       // Show success alert with transaction details
       Alert.alert(
@@ -572,17 +571,17 @@ const EthereumScreen = () => {
           <ScrollView style={{ padding: 15, minHeight: 140 }}>
             <View style={styles.container}>
               <SendNano
-                name={"Ethereum"}
+                name={"BNB"}
                 visible={sendModalVisible}
                 onClose={() => setSendModalVisible(false)}
-                handleSendTransaction={handleSendEthereumTransaction}
+                handleSendTransaction={handleSendBnbTransaction}
                 recipientAddress={recipient}
                 setRecipientAddress={setRecipient}
                 amountToSend={amount}
                 setAmountToSend={setAmount}
               />
               <ReceiveNano
-                name={"Ethereum"}
+                name={"BNB"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}
                 address={address}
@@ -639,9 +638,7 @@ const EthereumScreen = () => {
                     style={[styles.button, { paddingTop: 150 }]}
                     onPress={createAndSaveWallet}
                   >
-                    <Text style={styles.buttonText}>
-                      Generate Ethereum Wallet
-                    </Text>
+                    <Text style={styles.buttonText}>Generate BNB Wallet</Text>
                   </TouchableOpacity>
 
                   <Text style={styles.label}>Or Import Existing Wallet</Text>
@@ -662,7 +659,7 @@ const EthereumScreen = () => {
                 <>
                   <View style={styles.balanceInfo}>
                     <Text selectable style={styles.balanceText}>
-                      {Number(balance).toFixed(6)} ETH
+                      {Number(balance).toFixed(6)} BNB
                     </Text>
                     <Text style={styles.fiatBalanceText}>
                       ${fiatBalance ? fiatBalance : "0.00"}
@@ -858,4 +855,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EthereumScreen;
+export default BnbScreen;

@@ -127,11 +127,17 @@ export default function NanoScreen() {
       ),
       headerShown: true,
       headerTransparent: true,
+      headerMode: "float",
       headerStyle: {
         backgroundColor: isDarkMode ? "#333333" : "#ffffff",
+        elevation: 0,
       },
       headerRight: () => (
-        <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
+        <TouchableOpacity
+          onPress={openModal}
+          style={{ marginRight: 15, zIndex: 1 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Add hitSlop
+        >
           <Icon
             name="information-circle-outline"
             size={28}
@@ -141,7 +147,11 @@ export default function NanoScreen() {
         </TouchableOpacity>
       ),
       headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Home")}
+          style={{ marginLeft: 15, zIndex: 1 }} // Add padding
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Add hitSlop
+        >
           <Icon name="arrow-back" size={28} color="white" paddingLeft={15} />
         </TouchableOpacity>
       ),

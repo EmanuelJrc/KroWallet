@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Switch,
   Image,
   TouchableOpacity,
+  Dimensions,
+  ScrollView,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemeContext } from "../utils/ThemeContext";
 
 // Icons (Add your own icons for each crypto)
@@ -24,29 +24,30 @@ const CRYPTOCURRENCY_ICONS = {
   Xrp: require("../../assets/xrp.png"),
   Ethereum: require("../../assets/ethereum.png"),
   Dogecoin: require("../../assets/dogecoin.png"),
+  Bnb: require("../../assets/bnb.png"),
 };
 
 const HomeScreen = ({ navigation }) => {
   const { isDarkMode } = useContext(ThemeContext);
 
   const handleCryptoPress = (crypto) => {
-    // This is where you'd navigate or perform actions
     navigation.navigate(`${crypto}`);
     console.log(`${crypto} pressed`);
   };
 
   const cryptos = [
-    { name: "Bitcoin", icon: CRYPTOCURRENCY_ICONS.Bitcoin },
     { name: "Nano", icon: CRYPTOCURRENCY_ICONS.Nano },
     { name: "Banano", icon: CRYPTOCURRENCY_ICONS.Banano },
     { name: "Solana", icon: CRYPTOCURRENCY_ICONS.Solana },
     { name: "Stellar", icon: CRYPTOCURRENCY_ICONS.Stellar },
-    { name: "Litecoin", icon: CRYPTOCURRENCY_ICONS.Litecoin },
+    { name: "Ethereum", icon: CRYPTOCURRENCY_ICONS.Ethereum },
+    { name: "BNB", icon: CRYPTOCURRENCY_ICONS.Bnb },
+    { name: "XRP", icon: CRYPTOCURRENCY_ICONS.Xrp },
     { name: "Kava", icon: CRYPTOCURRENCY_ICONS.Kava },
     { name: "Cardano", icon: CRYPTOCURRENCY_ICONS.Cardano },
+    { name: "Bitcoin", icon: CRYPTOCURRENCY_ICONS.Bitcoin },
+    { name: "Litecoin", icon: CRYPTOCURRENCY_ICONS.Litecoin },
     { name: "Dash", icon: CRYPTOCURRENCY_ICONS.Dash },
-    { name: "Xrp", icon: CRYPTOCURRENCY_ICONS.Xrp },
-    { name: "Ethereum", icon: CRYPTOCURRENCY_ICONS.Ethereum },
     { name: "Dogecoin", icon: CRYPTOCURRENCY_ICONS.Dogecoin },
   ];
 
@@ -55,25 +56,19 @@ const HomeScreen = ({ navigation }) => {
       style={[
         styles.container,
         isDarkMode ? styles.darkContainer : styles.lightContainer,
+        { paddingTop: 120 },
       ]}
     >
-      <Text
-        style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}
-      >
-        KroWallet
-      </Text>
-
-      <View style={styles.cryptoContainer}>
+      <ScrollView contentContainerStyle={styles.cryptoContainer}>
         {cryptos.map((crypto, index) => (
           <TouchableOpacity
             key={index}
             style={[
-              styles.cryptoItem,
-              isDarkMode ? styles.cryptoItemDark : styles.cryptoItemLight,
+              styles.cryptoCard,
+              isDarkMode ? styles.cryptoCardDark : styles.cryptoCardLight,
             ]}
             onPress={() => handleCryptoPress(crypto.name)}
           >
-            <Image source={crypto.icon} style={styles.icon} />
             <Text
               style={[
                 styles.cryptoText,
@@ -82,9 +77,10 @@ const HomeScreen = ({ navigation }) => {
             >
               {crypto.name}
             </Text>
+            <Image source={crypto.icon} style={styles.icon} />
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -116,28 +112,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-around",
-    width: "100%",
   },
-  cryptoItem: {
+  cryptoCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    width: "80%",
+    height: Dimensions.get("window").height * 0.1,
     margin: 10,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: "#000000",
+    padding: 15,
+    borderRadius: 12,
+    elevation: 3, // for Android shadow
+    shadowColor: "#000", // for iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  cryptoItemLight: {
+  cryptoCardLight: {
     backgroundColor: "#d9d9d9",
   },
-  cryptoItemDark: {
+  cryptoCardDark: {
     backgroundColor: "#595959",
   },
   icon: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
   },
   cryptoText: {
-    marginTop: 5,
-    fontSize: 16,
+    fontSize: 18,
   },
 });
 

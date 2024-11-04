@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import {
-  SafeAreaView,
+  View,
   Text,
   Button,
+  StyleSheet,
   TextInput,
+  SafeAreaView,
+  Modal,
+  Pressable,
   RefreshControl,
-  View,
   TouchableOpacity,
   Linking,
-  StyleSheet,
   Animated,
-  Modal,
   Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -31,6 +32,7 @@ import ReceiveNano from "../../components/ReceiveNano";
 import { ThemeContext } from "../../utils/ThemeContext";
 import SendNano from "../../components/SendNano";
 import WalletActions from "../../components/WalletActions";
+import GradientBackground from "../../components/GradientBackground";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
@@ -51,6 +53,15 @@ export default function SolScreen() {
   const translateYAnim = useRef(new Animated.Value(50)).current;
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Define the header background color interpolation
+  const headerBackgroundColor = scrollY.interpolate({
+    inputRange: [0, 100], // Adjust this range based on your header height
+    outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
+    extrapolate: "clamp", // Prevents values from exceeding the defined range
+  });
 
   // Load wallet when the screen is opened
   useEffect(() => {
@@ -89,6 +100,7 @@ export default function SolScreen() {
       ),
       headerShown: true,
       headerTransparent: true,
+      headerMode: "float",
       headerStyle: {
         backgroundColor: isDarkMode ? "#333333" : "#ffffff",
       },
@@ -243,100 +255,123 @@ export default function SolScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#296fc5", "#3d3d3d", "#3d3d3d", "#333333"]}
-        style={StyleSheet.absoluteFill}
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 110, // Adjust based on your header height
+          backgroundColor: headerBackgroundColor,
+          zIndex: 1, // Ensure it sits above other components
+        }}
       />
-      <ScrollView
-        style={{ padding: 15, minHeight: 140 }}
+      <GradientBackground isDarkMode={isDarkMode} />
+      <Animated.ScrollView
+        style={{ flex: 1 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false } // Use native driver for better performance
+        )}
+        scrollEventThrottle={16} // Update every 16ms
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.container}>
-          <View style={styles.balanceSection}>
-            <View style={styles.balanceInfo}>
-              <Text selectable style={styles.balanceText}>
-                {balance} SOL
-              </Text>
-              <Text style={styles.fiatBalanceText}>
-                ${fiatBalance ? fiatBalance : "0.00"}
-              </Text>
-            </View>
-          </View>
+        <View style={{ flex: 1 }}>
+          <ScrollView style={{ padding: 15, minHeight: 140 }}>
+            <View style={styles.container}>
+              <View style={styles.balanceSection}>
+                <View style={styles.balanceInfo}>
+                  <Text selectable style={styles.balanceText}>
+                    {balance} SOL
+                  </Text>
+                  <Text style={styles.fiatBalanceText}>
+                    ${fiatBalance ? fiatBalance : "0.00"}
+                  </Text>
+                </View>
+              </View>
 
-          <WalletActions
-            isDarkMode={isDarkMode}
-            setSendModalVisible={setSendModalVisible}
-            setReceiveModalVisible={setReceiveModalVisible}
-            openExplore={openExplore}
-          />
+              <WalletActions
+                isDarkMode={isDarkMode}
+                setSendModalVisible={setSendModalVisible}
+                setReceiveModalVisible={setReceiveModalVisible}
+                openExplore={openExplore}
+              />
 
-          <SendNano
-            name={"Solana"}
-            visible={sendModalVisible}
-            onClose={() => setSendModalVisible(false)}
-            handleSendTransaction={handleSendTransaction}
-            recipientAddress={recipient}
-            setRecipientAddress={setRecipient}
-            amountToSend={amount.toString()}
-            setAmountToSend={setAmount}
-          />
+              <SendNano
+                name={"Solana"}
+                visible={sendModalVisible}
+                onClose={() => setSendModalVisible(false)}
+                handleSendTransaction={handleSendTransaction}
+                recipientAddress={recipient}
+                setRecipientAddress={setRecipient}
+                amountToSend={amount.toString()}
+                setAmountToSend={setAmount}
+              />
 
-          <ReceiveNano
-            name={"Solana"}
-            visible={receiveModalVisible}
-            onClose={() => setReceiveModalVisible(false)}
-            address={publicKey}
-          />
+              <ReceiveNano
+                name={"Solana"}
+                visible={receiveModalVisible}
+                onClose={() => setReceiveModalVisible(false)}
+                address={publicKey}
+              />
 
-          <Modal transparent visible={modalVisible} onRequestClose={closeModal}>
-            <View style={styles.overlay}>
-              <Animated.View
-                style={[
-                  styles.modalContent,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{ translateY: translateYAnim }],
-                  },
-                ]}
+              <Modal
+                transparent
+                visible={modalVisible}
+                onRequestClose={closeModal}
               >
-                <Text style={styles.modalTitle}>Private Key</Text>
-                <PrivateKeyDisplay />
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={handleDeleteWallet}
-                >
-                  <Text style={styles.deleteButtonText}>Delete Wallet</Text>
-                </TouchableOpacity>
-                <Button title="Close" onPress={closeModal} />
-              </Animated.View>
+                <View style={styles.overlay}>
+                  <Animated.View
+                    style={[
+                      styles.modalContent,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: translateYAnim }],
+                      },
+                    ]}
+                  >
+                    <Text style={styles.modalTitle}>Private Key</Text>
+                    <PrivateKeyDisplay />
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={handleDeleteWallet}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete Wallet</Text>
+                    </TouchableOpacity>
+                    <Button title="Close" onPress={closeModal} />
+                  </Animated.View>
+                </View>
+              </Modal>
+
+              {!walletCreated ? (
+                <>
+                  <Button
+                    title="Generate New Wallet"
+                    onPress={handleCreateWallet}
+                  />
+
+                  <Text style={styles.label}>
+                    Or import an existing wallet:
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter Private Key to Import"
+                    onChangeText={setPrivateKey}
+                    value={privateKey}
+                  />
+                  <Button title="Import Wallet" onPress={handleImportWallet} />
+                </>
+              ) : (
+                <>
+                  <RecentTransactions transactions={transactions} />
+                </>
+              )}
             </View>
-          </Modal>
-
-          {!walletCreated ? (
-            <>
-              <Button
-                title="Generate New Wallet"
-                onPress={handleCreateWallet}
-              />
-
-              <Text style={styles.label}>Or import an existing wallet:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Private Key to Import"
-                onChangeText={setPrivateKey}
-                value={privateKey}
-              />
-              <Button title="Import Wallet" onPress={handleImportWallet} />
-            </>
-          ) : (
-            <>
-              <RecentTransactions transactions={transactions} />
-            </>
-          )}
+          </ScrollView>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
