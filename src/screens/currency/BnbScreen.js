@@ -573,6 +573,7 @@ const BnbScreen = () => {
               <SendNano
                 name={"BNB"}
                 visible={sendModalVisible}
+                setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
                 handleSendTransaction={handleSendBnbTransaction}
                 recipientAddress={recipient}

@@ -574,6 +574,7 @@ const EthereumScreen = () => {
               <SendNano
                 name={"Ethereum"}
                 visible={sendModalVisible}
+                setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
                 handleSendTransaction={handleSendEthereumTransaction}
                 recipientAddress={recipient}

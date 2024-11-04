@@ -425,6 +425,7 @@ const StellarScreen = () => {
               <SendNano
                 name={"Stellar"}
                 visible={sendModalVisible}
+                setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
                 handleSendTransaction={sendTransaction}
                 recipientAddress={destination}
@@ -432,7 +433,6 @@ const StellarScreen = () => {
                 amountToSend={amount}
                 setAmountToSend={setAmount}
               />
-
               <ReceiveNano
                 name={"Stellar"}
                 visible={receiveModalVisible}

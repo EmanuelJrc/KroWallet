@@ -302,6 +302,7 @@ export default function SolScreen() {
               <SendNano
                 name={"Solana"}
                 visible={sendModalVisible}
+                setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
                 handleSendTransaction={handleSendTransaction}
                 recipientAddress={recipient}

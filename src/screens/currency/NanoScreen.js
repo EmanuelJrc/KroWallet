@@ -518,6 +518,7 @@ export default function NanoScreen() {
               {/* Modal to send Nano */}
               <SendNano
                 visible={sendModalVisible}
+                setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
                 handleSendTransaction={handleSendTransaction}
                 recipientAddress={recipientAddress}
