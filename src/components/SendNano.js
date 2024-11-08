@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Animated,
+  PanResponder,
 } from "react-native";
-// import { styles } from "../styles/nanoStyles";
 import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/Ionicons";
+import { ThemeContext } from "../utils/ThemeContext";
+import { Button } from "react-native-paper";
 import QRCodeScannerScreen from "../screens/QRCodeScannerScreen";
 
 export default function SendNano({
   name,
+  ticker,
   visible,
   onClose,
   handleSendTransaction,
@@ -25,65 +30,174 @@ export default function SendNano({
   transactionStatus,
   setVisible,
 }) {
+  const { height } = Dimensions.get("window");
   const navigation = useNavigation();
+  const { isDarkMode } = useContext(ThemeContext);
 
   const handleQRCodeScan = () => {
-    setVisible(false); // Hide the modal
+    setVisible(false);
     navigation.navigate("QRCodeScanner", {
       previousScreen: "SendNano",
       onScanComplete: (scannedAddress) => {
         setRecipientAddress(scannedAddress);
-        setVisible(true); // Show the modal again after scan
+        setVisible(true);
       },
     });
   };
 
+  const [modalHeight, setModalHeight] = useState(height * 0.19);
+  const [isDragging, setIsDragging] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  const slideAnim = useRef(new Animated.Value(height)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => true,
+      onPanResponderGrant: () => setIsDragging(true),
+      onPanResponderRelease: (_, gestureState) => {
+        setIsDragging(false);
+        const draggedDistance = gestureState.dy;
+        if (draggedDistance > 100) {
+          Animated.timing(slideAnim, {
+            toValue: height,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(onClose);
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: modalHeight,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      onPanResponderMove: (_, gestureState) => {
+        slideAnim.setValue(modalHeight + gestureState.dy);
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: modalHeight,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, modalHeight]);
+
+  const handleHeaderPress = () => {
+    Animated.timing(slideAnim, {
+      toValue: height,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(onClose);
+  };
+
+  const handleHeaderLayout = (event) => {
+    setHeaderHeight(event.nativeEvent.layout.height);
+  };
+
   return (
     <Modal
-      animationType="slide"
-      transparent={true}
+      transparent
+      animationType="none"
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.sendModalView}>
-          <Text style={styles.modalTitle}>Send {name}</Text>
+      <Animated.View
+        style={[
+          styles.modalContainer,
+          { transform: [{ translateY: slideAnim }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity
+          style={[
+            styles.receiveHeader,
+            isDragging && { backgroundColor: "#444" },
+          ]}
+          activeOpacity={1}
+          onLayout={handleHeaderLayout}
+        >
+          <TouchableOpacity
+            onPress={handleHeaderPress}
+            style={styles.receiveIconButton}
+          >
+            <Icon
+              name="arrow-back"
+              size={24}
+              color={isDarkMode ? "#FFF" : "#000"}
+            />
+          </TouchableOpacity>
+
+          <Text style={styles.receiveHeaderText}>Send {name}</Text>
+
+          <TouchableOpacity
+            onPress={handleSendTransaction}
+            style={styles.iconButton}
+          >
+            <Text style={styles.sendHeaderText}>Send</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+        <View style={styles.addressContainer}>
           <TextInput
-            style={styles.inputField}
+            style={styles.addressInput}
             placeholder="Recipient Address"
             placeholderTextColor="#C0C0C0"
             onChangeText={setRecipientAddress}
             value={recipientAddress}
           />
-          <TextInput
-            style={styles.inputField}
-            placeholder="Amount"
-            placeholderTextColor="#C0C0C0"
-            keyboardType="numeric"
-            onChangeText={setAmountToSend}
-            value={amountToSend.replace(",", ".")}
-          />
+          <TouchableOpacity
+            onPress={handleQRCodeScan}
+            style={styles.qrIconButton}
+          >
+            <Icon
+              name="qr-code-outline"
+              size={24}
+              color={isDarkMode ? "#FFF" : "#000"}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.sendModalView}>
+          <View style={styles.amountInputContainer}>
+            <TextInput
+              style={[styles.inputField, styles.amountInput]}
+              placeholder="0"
+              placeholderTextColor="#C0C0C0"
+              keyboardType="numeric"
+              onChangeText={setAmountToSend}
+              value={amountToSend.replace(",", ".")}
+            />
+            <Text style={styles.tickerText}>{ticker}</Text>
+          </View>
+        </View>
+        <View style={styles.sendButtonView}>
           {transactionStatus ? <Text>{transactionStatus}</Text> : null}
 
-          {/* QR Code Scan Button */}
-          <Pressable style={styles.button} onPress={handleQRCodeScan}>
-            <Text style={styles.buttonText}>Scan QR Code</Text>
-          </Pressable>
-
-          <Pressable style={styles.button} onPress={handleSendTransaction}>
-            <Text style={styles.buttonText}>Send {name}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.sendButton, styles.sendButtonClose]}
-            onPress={onClose}
+          <Button
+            mode="contained"
+            style={styles.shareButton}
+            onPress={() => {
+              handleSendTransaction();
+            }}
+            labelStyle={styles.shareButtonLabel}
           >
-            <Text style={styles.buttonText}>Close</Text>
-          </Pressable>
+            Send
+          </Button>
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -94,7 +208,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "90%",
     padding: 20,
-    backgroundColor: "#333333",
+    backgroundColor: "#1a1a1a",
     borderRadius: 10,
     alignItems: "center",
     elevation: 10,
@@ -129,6 +243,16 @@ const styles = StyleSheet.create({
   balanceContainer: {
     marginTop: 20,
     marginBottom: 20,
+  },
+  amountInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+  },
+  tickerText: {
+    fontSize: 42,
+    marginLeft: 8,
+    color: "#666",
   },
   input: {
     width: "100%",
@@ -183,20 +307,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   sendModalView: {
-    width: "90%",
-    marginTop: "30%",
-    backgroundColor: "#333333",
-    borderRadius: 20,
-    padding: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    justifyContent: "center",
+    paddingVertical: 130,
+  },
+  sendButtonView: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 33,
   },
   modalTitle: {
     fontSize: 22,
@@ -294,15 +412,28 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
+  addressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  addressInput: {
+    backgroundColor: "#333",
+    color: "#fff",
+    width: "80%",
+    marginTop: 20,
+    marginBottom: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  qrIconButton: {
+    padding: 8,
+  },
   inputField: {
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 10,
-    color: "#000000",
-    placeholderTextColor: "#000000",
+    fontSize: 48,
+    color: "#FFF",
   },
   button: {
     borderRadius: 10,
@@ -410,12 +541,71 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dimmed background
+    backgroundColor: "#1a1a1a", // Dimmed background
   },
   receivingStatusText: {
     fontSize: 14,
     color: "#333",
     textAlign: "center",
     marginTop: 5,
+  },
+  receiveModalContainer: {
+    flex: 1,
+    justifyContent: "top",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
+  },
+  receiveHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#333333", // Customize based on your theme
+    minWidth: "100%",
+  },
+  receiveModalView: {
+    margin: 20,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 10,
+    padding: 35,
+    alignItems: "center",
+  },
+  receiveIconButton: {
+    padding: 8,
+  },
+  receiveHeaderText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "white", // Customize based on your theme
+  },
+  sendHeaderText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "white", // Customize based on your theme
+    marginLeft: -15,
+  },
+  qrContainer: {
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  shareButton: {
+    maxWidth: "90%",
+    minWidth: "90%",
+    backgroundColor: "#296fc5",
+    height: "25%",
+    textAlign: "center",
+    justifyContent: "center",
+    fontWeight: "bold",
+    borderRadius: 25,
+  },
+  shareButtonLabel: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

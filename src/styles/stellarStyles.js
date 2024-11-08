@@ -33,11 +33,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 6,
     marginTop: 15,
+    marginBottom: 15,
   },
   deleteButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+    textAlign: "center",
   },
   balanceInfo: {
     marginTop: 20,

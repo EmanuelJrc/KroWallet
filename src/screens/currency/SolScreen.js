@@ -33,11 +33,17 @@ import { ThemeContext } from "../../utils/ThemeContext";
 import SendNano from "../../components/SendNano";
 import WalletActions from "../../components/WalletActions";
 import GradientBackground from "../../components/GradientBackground";
+import StellarPriceDetail from "../../components/StellarPriceDetail";
+import axios from "axios";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
   const [balance, setBalance] = useState(null);
   const [fiatBalance, setFiatBalance] = useState(null);
+  const [price, setPrice] = useState(null);
+  const [percentageChange, setPercentageChange] = useState(null);
+  const [priceChange, setPriceChange] = useState(0);
+  const [chartData, setChartData] = useState([]);
   const [recipient, setRecipient] = useState("");
   const [walletCreated, setWalletCreated] = useState(false);
   const [amount, setAmount] = useState(0);
@@ -216,6 +222,8 @@ export default function SolScreen() {
       // Re-fetch balance and transactions
       await handleCheckBalance();
       await handleFetchTransactions();
+      await fetchCurrentPrice();
+      await fetchHistoricalData();
     } catch (error) {
       console.log("Error refreshing data:", error);
     } finally {
@@ -250,6 +258,53 @@ export default function SolScreen() {
       console.log(
         "https://solscan.io/account/" + publicKey + "?cluster=devnet"
       );
+    }
+  };
+
+  const fetchCurrentPrice = async () => {
+    try {
+      const response = await axios.get(
+        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=solana"
+      );
+      console.log("Current Price:", response.data[0].current_price);
+      const price = parseFloat(response.data[0].current_price); // Get price_usd and convert to float
+      const percentageChange = parseFloat(
+        response.data[0].market_cap_change_percentage_24h
+      );
+
+      // Calculate the actual price change based on the percentage change
+      const change = (price * (percentageChange / 100)).toFixed(4); // Calculate change and format to 4 decimal places
+
+      // Get percent_change_24h and convert to float
+      if (balance) {
+        const value = price * parseFloat(balance); // Calculate fiat value
+        setFiatBalance(value.toFixed(2)); // Update state with formatted value
+        setPriceChange(change);
+      }
+      setPrice(price.toFixed(4));
+      setPercentageChange(percentageChange); // Update state with formatted value
+    } catch (error) {
+      console.error("Error fetching price from CoinGecko:", error);
+      alert("Failed to fetch price.");
+      return null;
+    }
+  };
+
+  const fetchHistoricalData = async () => {
+    try {
+      // Replace with a suitable endpoint that provides historical data for Ethereum
+      const response = await axios.get(
+        "https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=1"
+      );
+      const prices = response.data.prices; // Extract prices from the response
+
+      // Map the prices to a suitable format for charting (e.g., just the price values)
+      const formattedPrices = prices.map((price) => price[1]); // price[1] is the price value
+      setChartData(formattedPrices);
+    } catch (error) {
+      console.error("Error fetching historical data:", error);
+      alert("Failed to fetch historical price data.");
+      return null;
     }
   };
 
@@ -301,6 +356,7 @@ export default function SolScreen() {
 
               <SendNano
                 name={"Solana"}
+                ticker={"SOL"}
                 visible={sendModalVisible}
                 setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
@@ -366,6 +422,13 @@ export default function SolScreen() {
                 </>
               ) : (
                 <>
+                  <StellarPriceDetail
+                    name={"Solana"}
+                    price={price}
+                    change={priceChange}
+                    percentageChange={percentageChange}
+                    chartData={chartData}
+                  />
                   <RecentTransactions transactions={transactions} />
                 </>
               )}

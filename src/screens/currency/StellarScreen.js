@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -28,6 +27,7 @@ import { styles } from "../../styles/stellarStyles";
 import useModalAnimation from "../../hooks/useModalAnimation";
 import WalletActions from "../../components/WalletActions";
 import GradientBackground from "../../components/GradientBackground";
+import { Button } from "react-native-paper";
 
 const StellarScreen = () => {
   const [publicKey, setPublicKey] = useState(null);
@@ -424,6 +424,7 @@ const StellarScreen = () => {
             <View style={styles.container}>
               <SendNano
                 name={"Stellar"}
+                ticker={"XLM"}
                 visible={sendModalVisible}
                 setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
@@ -460,11 +461,13 @@ const StellarScreen = () => {
                       {secretKey}
                     </Text>
                     <Button
-                      title="Copy Secret Key"
+                      mode="contained"
                       onPress={() => {
                         copyToClipboardSecret();
                       }}
-                    />
+                    >
+                      Copy Secret Key
+                    </Button>
 
                     <TouchableOpacity
                       style={styles.deleteButton}
@@ -472,7 +475,9 @@ const StellarScreen = () => {
                     >
                       <Text style={styles.deleteButtonText}>Delete Wallet</Text>
                     </TouchableOpacity>
-                    <Button title="Close" onPress={closeModal} />
+                    <Button mode="contained" onPress={closeModal}>
+                      Close
+                    </Button>
                   </Animated.View>
                 </View>
               </Modal>
@@ -520,6 +525,7 @@ const StellarScreen = () => {
                   />
 
                   <StellarPriceDetail
+                    name={"Stellar"}
                     price={price}
                     change={priceChange}
                     percentageChange={percentageChange}

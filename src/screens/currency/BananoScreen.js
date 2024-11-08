@@ -43,6 +43,7 @@ import WalletActions from "../../components/WalletActions";
 import useModalAnimation from "../../hooks/useModalAnimation";
 import GradientBackground from "../../components/GradientBackground";
 import BananoTransactionList from "../../components/BananoTransactionList";
+import StellarPriceDetail from "../../components/StellarPriceDetail";
 
 const NODE_URL = "https://nodes.nanswap.com/BAN";
 
@@ -57,6 +58,11 @@ export default function BananoScreen() {
   const [numberOfAccounts, setNumberOfAccounts] = useState(1);
   const [recipientAddress, setRecipientAddress] = useState("");
   const [balance, setBalance] = useState(null); // Add state for balance
+  const [fiatBalance, setFiatBalance] = useState(null);
+  const [price, setPrice] = useState(null);
+  const [percentageChange, setPercentageChange] = useState(null);
+  const [priceChange, setPriceChange] = useState(0);
+  const [chartData, setChartData] = useState([]);
   const [lastTransactionHash, setLastTransactionHash] = useState("");
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
   const [derivedAccountsModalVisible, setDerivedAccountsModalVisible] =
@@ -164,6 +170,8 @@ export default function BananoScreen() {
   useEffect(() => {
     if (walletCreated && address) {
       fetchTransactions();
+      fetchCurrentPrice();
+      fetchHistoricalData();
       checkBalance();
     }
   }, [walletCreated, address]);
@@ -197,6 +205,7 @@ export default function BananoScreen() {
       // Re-fetch balance and transactions
       await checkBalance();
       await fetchTransactions();
+      await fetchCurrentPrice();
     } catch (error) {
       console.log("Error refreshing data:", error);
     } finally {
@@ -391,6 +400,53 @@ export default function BananoScreen() {
     }
   };
 
+  const fetchCurrentPrice = async () => {
+    try {
+      const response = await axios.get(
+        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=banano"
+      );
+      console.log("Current Price:", response.data[0].current_price);
+      const price = parseFloat(response.data[0].current_price); // Get price_usd and convert to float
+      const percentageChange = parseFloat(
+        response.data[0].market_cap_change_percentage_24h
+      );
+
+      // Calculate the actual price change based on the percentage change
+      const change = (price * (percentageChange / 100)).toFixed(4); // Calculate change and format to 4 decimal places
+
+      // Get percent_change_24h and convert to float
+      if (balance) {
+        const value = price * parseFloat(balance); // Calculate fiat value
+        setFiatBalance(value.toFixed(2)); // Update state with formatted value
+        setPriceChange(change);
+      }
+      setPrice(price.toFixed(4));
+      setPercentageChange(percentageChange); // Update state with formatted value
+    } catch (error) {
+      console.error("Error fetching price from CoinGecko:", error);
+      alert("Failed to fetch price.");
+      return null;
+    }
+  };
+
+  const fetchHistoricalData = async () => {
+    try {
+      // Replace with a suitable endpoint that provides historical data for Ethereum
+      const response = await axios.get(
+        "https://api.coingecko.com/api/v3/coins/banano/market_chart?vs_currency=usd&days=1"
+      );
+      const prices = response.data.prices; // Extract prices from the response
+
+      // Map the prices to a suitable format for charting (e.g., just the price values)
+      const formattedPrices = prices.map((price) => price[1]); // price[1] is the price value
+      setChartData(formattedPrices);
+    } catch (error) {
+      console.error("Error fetching historical data:", error);
+      alert("Failed to fetch historical price data.");
+      return null;
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Animated.View
@@ -418,35 +474,13 @@ export default function BananoScreen() {
       >
         <View style={{ flex: 1 }}>
           <ScrollView style={{ padding: 15, minHeight: 140 }}>
-            <View style={[styles.container, { paddingTop: 60 }]}>
-              <View style={styles.balanceContainer}>
-                <Text
-                  style={[styles.balanceText, isDarkMode && styles.darkText]}
-                >
-                  {balance} BAN
-                </Text>
-                <Text style={styles.fiatBalanceText}>$0.00</Text>
-              </View>
-
-              {receivingStatus && (
-                <Text style={styles.receivingStatusText}>
-                  {receivingStatus}
-                </Text>
-              )}
-              <WalletActions
-                isDarkMode={isDarkMode}
-                setSendModalVisible={setSendModalVisible}
-                setReceiveModalVisible={setReceiveModalVisible}
-                openExplore={openExplore}
-              />
-            </View>
-
             <View style={styles.container}>
               {/* Add the SendCryptoModule */}
               {/* <SendCryptoModule address={address} privateKey={privateKey} /> */}
 
               {/* Modal to display QR code and address */}
               <ReceiveNano
+                name={"Banano"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}
                 address={address}
@@ -503,6 +537,8 @@ export default function BananoScreen() {
 
               {/* Modal to send Banano */}
               <SendNano
+                name={"Banano"}
+                ticker={"BAN"}
                 visible={sendModalVisible}
                 setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
@@ -590,6 +626,33 @@ export default function BananoScreen() {
                 </>
               ) : (
                 <>
+                  <View style={styles.balanceContainer}>
+                    <Text selectable style={styles.balanceText}>
+                      {balance ? balance : "0.00"} BAN
+                    </Text>
+                    <Text style={styles.fiatBalanceText}>
+                      ${fiatBalance ? fiatBalance : "0.00"}
+                    </Text>
+                  </View>
+
+                  {receivingStatus && (
+                    <Text style={styles.receivingStatusText}>
+                      {receivingStatus}
+                    </Text>
+                  )}
+                  <WalletActions
+                    isDarkMode={isDarkMode}
+                    setSendModalVisible={setSendModalVisible}
+                    setReceiveModalVisible={setReceiveModalVisible}
+                    openExplore={openExplore}
+                  />
+                  <StellarPriceDetail
+                    name={"Banano"}
+                    price={price}
+                    change={priceChange}
+                    percentageChange={percentageChange}
+                    chartData={chartData}
+                  />
                   <BananoTransactionList
                     transactions={transactions}
                     userAddress={address}

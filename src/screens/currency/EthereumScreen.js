@@ -33,6 +33,7 @@ import SendNano from "../../components/SendNano";
 import WalletTransactionHistory from "../../services/ethereum/transactionList";
 import axios from "axios";
 import GradientBackground from "../../components/GradientBackground";
+import StellarPriceDetail from "../../components/StellarPriceDetail";
 
 const EthereumScreen = () => {
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
@@ -53,6 +54,7 @@ const EthereumScreen = () => {
   const [percentageChange, setPercentageChange] = useState(null);
   const [priceChange, setPriceChange] = useState(0);
   const [provider, setProvider] = useState(null);
+  const [chartData, setChartData] = useState([]);
 
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
@@ -346,9 +348,28 @@ const EthereumScreen = () => {
     }
   };
 
+  const fetchHistoricalData = async () => {
+    try {
+      // Replace with a suitable endpoint that provides historical data for Ethereum
+      const response = await axios.get(
+        "https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=1"
+      );
+      const prices = response.data.prices; // Extract prices from the response
+
+      // Map the prices to a suitable format for charting (e.g., just the price values)
+      const formattedPrices = prices.map((price) => price[1]); // price[1] is the price value
+      setChartData(formattedPrices);
+    } catch (error) {
+      console.error("Error fetching historical data:", error);
+      alert("Failed to fetch historical price data.");
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (walletCreated) {
       fetchCurrentPrice();
+      fetchHistoricalData();
       fetchBalance(address, provider);
     }
   }, [walletCreated]);
@@ -573,6 +594,7 @@ const EthereumScreen = () => {
             <View style={styles.container}>
               <SendNano
                 name={"Ethereum"}
+                ticker={"ETH"}
                 visible={sendModalVisible}
                 setVisible={setSendModalVisible}
                 onClose={() => setSendModalVisible(false)}
@@ -675,6 +697,13 @@ const EthereumScreen = () => {
                     setSendModalVisible={setSendModalVisible}
                     setReceiveModalVisible={setReceiveModalVisible}
                     openExplore={openExplore}
+                  />
+                  <StellarPriceDetail
+                    name={"Ethereum"}
+                    price={price}
+                    change={priceChange}
+                    percentageChange={percentageChange}
+                    chartData={chartData}
                   />
                   <WalletTransactionHistory address={address} />
                 </>

@@ -5,14 +5,20 @@ import * as shape from "d3-shape";
 import { Circle, G, Line } from "react-native-svg";
 import { ThemeContext } from "../utils/ThemeContext";
 
-const StellarPriceDetail = ({ price, change, percentageChange, chartData }) => {
+const StellarPriceDetail = ({
+  name,
+  price,
+  change,
+  percentageChange,
+  chartData,
+}) => {
   const { isDarkMode } = useContext(ThemeContext);
 
   return (
     <View style={[styles.card, isDarkMode && styles.darkCard]}>
       <View style={styles.topContainer}>
         <Text style={[styles.cardTitle, isDarkMode && styles.darkTitle]}>
-          Stellar
+          {name}
         </Text>
         <Text style={[styles.subTitle, isDarkMode && styles.darkTitle]}>
           24h Price
