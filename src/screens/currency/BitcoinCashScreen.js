@@ -16,23 +16,23 @@ import ecc from "@bitcoinerlab/secp256k1";
 import * as bitcoin from "bitcoinjs-lib";
 import * as Clipboard from "expo-clipboard";
 
-// Define Dash network parameters
-const dash = {
-  messagePrefix: "\x19Dash Signed Message:\n",
-  bech32: "", // Dash doesn't use bech32
+// Define Bitcoin Cash network parameters
+const bch = {
+  messagePrefix: "\x18Bitcoin Signed Message:\n",
+  bech32: "",
   bip32: {
     public: 0x0488b21e,
     private: 0x0488ade4,
   },
-  pubKeyHash: 0x4c, // Addresses start with 'X'
-  scriptHash: 0x10,
-  wif: 0xcc, // Private keys start with '7' or 'X'
+  pubKeyHash: 0x00, // Legacy addresses start with '1'
+  scriptHash: 0x05, // Legacy P2SH addresses start with '3'
+  wif: 0x80, // Private key WIF format
 };
 
-const DashWallet = () => {
+const BitcoinCashWallet = () => {
   const [walletData, setWalletData] = useState({
-    address: "",
-    p2shAddress: "",
+    legacyAddress: "", // Legacy format (1...)
+    p2shAddress: "", // P2SH format (3...)
     publicKey: "",
     privateKey: "",
     wif: "",
@@ -55,11 +55,11 @@ const DashWallet = () => {
   };
 
   const exportWalletData = async () => {
-    const walletExport = `DASH WALLET BACKUP
+    const walletExport = `BITCOIN CASH WALLET BACKUP
 DO NOT SHARE THESE DETAILS WITH ANYONE!
 Generated: ${new Date().toISOString()}
 
-Standard Address: ${walletData.address}
+Legacy Address: ${walletData.legacyAddress}
 P2SH Address: ${walletData.p2shAddress}
 Public Key: ${walletData.publicKey}
 Private Key: ${walletData.privateKey}
@@ -94,30 +94,30 @@ KEEP THIS INFORMATION SECURE!`;
       getRandomValues(randomBytes);
 
       const keyPair = ECPair.fromPrivateKey(Buffer.from(randomBytes), {
-        network: dash,
+        network: bch,
       });
 
       const publicKey = keyPair.publicKey.toString("hex");
       const privateKey = keyPair.privateKey.toString("hex");
       const wif = keyPair.toWIF();
 
-      // Generate standard P2PKH address
+      // Generate legacy address (1...)
       const p2pkh = bitcoin.payments.p2pkh({
         pubkey: keyPair.publicKey,
-        network: dash,
+        network: bch,
       });
 
-      // Generate P2SH address
+      // Generate P2SH address (3...)
       const p2sh = bitcoin.payments.p2sh({
         redeem: bitcoin.payments.p2pk({
           pubkey: keyPair.publicKey,
-          network: dash,
+          network: bch,
         }),
-        network: dash,
+        network: bch,
       });
 
       setWalletData({
-        address: p2pkh.address,
+        legacyAddress: p2pkh.address,
         p2shAddress: p2sh.address,
         publicKey,
         privateKey,
@@ -125,10 +125,10 @@ KEEP THIS INFORMATION SECURE!`;
       });
 
       Alert.alert(
-        "Dash Wallet Generated Successfully",
+        "Bitcoin Cash Wallet Generated Successfully",
         "Your wallet addresses have been generated.\n\n" +
-          "• Standard Address (starts with 'X')\n" +
-          "• Script Address (P2SH)\n\n" +
+          "• Legacy Address (starts with '1')\n" +
+          "• P2SH Address (starts with '3')\n\n" +
           "Please backup your private keys immediately.",
         [
           {
@@ -139,7 +139,10 @@ KEEP THIS INFORMATION SECURE!`;
       );
     } catch (error) {
       console.error("Error generating wallet:", error);
-      Alert.alert("Error", "Failed to generate Dash wallet. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to generate Bitcoin Cash wallet. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -180,37 +183,37 @@ KEEP THIS INFORMATION SECURE!`;
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Dash Wallet Generator</Text>
+        <Text style={styles.title}>Bitcoin Cash Wallet Generator</Text>
 
         <View style={styles.content}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Standard Address:</Text>
+            <Text style={styles.label}>Legacy Address:</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={[styles.input, styles.inputWithButton]}
-                value={walletData.address}
+                value={walletData.legacyAddress}
                 editable={false}
                 selectTextOnFocus
-                placeholder="Will start with 'X'"
+                placeholder="Will start with '1'"
               />
-              {walletData.address && (
+              {walletData.legacyAddress && (
                 <CopyButton
-                  text={walletData.address}
-                  label="Standard Address"
+                  text={walletData.legacyAddress}
+                  label="Legacy Address"
                 />
               )}
             </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Script Address (P2SH):</Text>
+            <Text style={styles.label}>P2SH Address:</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={[styles.input, styles.inputWithButton]}
                 value={walletData.p2shAddress}
                 editable={false}
                 selectTextOnFocus
-                placeholder="P2SH Address"
+                placeholder="Will start with '3'"
               />
               {walletData.p2shAddress && (
                 <CopyButton
@@ -285,7 +288,7 @@ KEEP THIS INFORMATION SECURE!`;
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#008DE4" }]}
+            style={[styles.button, { backgroundColor: "#8DC351" }]} // BCH green
             onPress={generateWallet}
             disabled={loading}
           >
@@ -347,7 +350,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   toggleButton: {
-    color: "#008DE4",
+    color: "#8DC351", // BCH green
     fontSize: 14,
     fontWeight: "500",
   },
@@ -371,7 +374,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 0,
   },
   copyButton: {
-    backgroundColor: "#008DE4",
+    backgroundColor: "#8DC351", // BCH green
     borderTopRightRadius: 8,
     borderBottomRightRadius: 8,
     padding: 12,
@@ -385,7 +388,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#8DC351", // BCH green
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -407,4 +410,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DashWallet;
+export default BitcoinCashWallet;

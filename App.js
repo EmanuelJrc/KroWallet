@@ -25,6 +25,8 @@ import XrpScreen from "./src/screens/currency/XrpScreen";
 import EthereumScreen from "./src/screens/currency/EthereumScreen";
 import DogecoinScreen from "./src/screens/currency/DogecoinScreen";
 import BnbScreen from "./src/screens/currency/BnbScreen";
+import BitcoinCashWallet from "./src/screens/currency/BitcoinCashScreen";
+import ZCashWallet from "./src/screens/currency/ZCashScreen";
 import SendNano from "./src/components/SendNano";
 import QRCodeScannerScreen from "./src/screens/QRCodeScannerScreen";
 const Stack = createStackNavigator();
@@ -120,6 +122,8 @@ function AppNavigator() {
         <Stack.Screen name="Ethereum" component={EthereumScreen} />
         <Stack.Screen name="Dogecoin" component={DogecoinScreen} />
         <Stack.Screen name="BNB" component={BnbScreen} />
+        <Stack.Screen name="BitcoinCash" component={BitcoinCashWallet} />
+        <Stack.Screen name="Zcash" component={ZCashWallet} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -659,7 +659,7 @@ const EthereumScreen = () => {
               {!walletCreated ? (
                 <>
                   <TouchableOpacity
-                    style={[styles.button, { paddingTop: 150 }]}
+                    style={[styles.button, { marginTop: 150 }]}
                     onPress={createAndSaveWallet}
                   >
                     <Text style={styles.buttonText}>

@@ -469,15 +469,20 @@ const StellarScreen = () => {
                       Copy Secret Key
                     </Button>
 
+                    <Button
+                      style={styles.closeButton}
+                      mode="contained"
+                      onPress={closeModal}
+                    >
+                      Close
+                    </Button>
+
                     <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={deleteWallet}
                     >
                       <Text style={styles.deleteButtonText}>Delete Wallet</Text>
                     </TouchableOpacity>
-                    <Button mode="contained" onPress={closeModal}>
-                      Close
-                    </Button>
                   </Animated.View>
                 </View>
               </Modal>

@@ -1,373 +1,258 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+// shim.js remains the same
+
+import "../../../shim";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  Button,
-  StyleSheet,
-  TouchableOpacity,
   TextInput,
-  RefreshControl,
+  TouchableOpacity,
+  StyleSheet,
   ScrollView,
-  Linking,
+  SafeAreaView,
+  ActivityIndicator,
   Alert,
-  Modal,
-  Animated,
-  Image,
 } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
-import { ThemeContext } from "../../utils/ThemeContext";
-import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
-import WalletActions from "../../components/WalletActions";
+import ECPairFactory from "ecpair";
+import ecc from "@bitcoinerlab/secp256k1";
+import * as bitcoin from "bitcoinjs-lib";
+import { Copy } from "lucide-react"; // Import the copy icon
 
-const DogecoinScreen = () => {
-  const [refreshing, setRefreshing] = useState(false); // State for refreshing
-  const [balance, setBalance] = useState(null);
+// Define Dogecoin network parameters
+const dogecoin = {
+  messagePrefix: "\x19Dogecoin Signed Message:\n",
+  bech32: "doge", // Note: Dogecoin doesn't widely support bech32 yet
+  bip32: {
+    public: 0x02facafd,
+    private: 0x02fac398,
+  },
+  pubKeyHash: 0x1e,
+  scriptHash: 0x16,
+  wif: 0x9e,
+};
 
-  const navigation = useNavigation();
-  const { isDarkMode } = useContext(ThemeContext);
-
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  // Define the header background color interpolation
-  const headerBackgroundColor = scrollY.interpolate({
-    inputRange: [0, 100], // Adjust this range based on your header height
-    outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
-    extrapolate: "clamp", // Prevents values from exceeding the defined range
+const DogecoinWallet = () => {
+  const [walletData, setWalletData] = useState({
+    legacyAddress: "", // Standard P2PKH address
+    p2shAddress: "", // P2SH address
+    publicKey: "",
+    privateKey: "",
+    wif: "",
   });
+  const [loading, setLoading] = useState(false);
 
-  // Set up header with the info button
-  useEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => (
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image
-            source={require("../../../assets/dogecoin.png")} // Update the path to your image
-            style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
-          />
-          <Text
-            style={{
-              color: isDarkMode ? "#ffffff" : "#000000",
-              fontWeight: "bold",
-              fontSize: 18,
-            }}
-          >
-            Dogecoin
-          </Text>
-        </View>
-      ),
-      headerShown: true,
-      headerTransparent: true,
-      headerMode: "float",
-      headerStyle: {
-        backgroundColor: isDarkMode ? "#333333" : "#ffffff",
-      },
-      headerRight: () => (
-        <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
-          <Icon
-            name="information-circle-outline"
-            size={28}
-            color={isDarkMode ? "white" : "black"}
-            paddingRight={15}
-          />
-        </TouchableOpacity>
-      ),
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
-          <Icon
-            name="arrow-back"
-            size={28}
-            color={isDarkMode ? "white" : "black"}
-            paddingLeft={15}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
+  const generateWallet = async () => {
+    setLoading(true);
 
-  // Fade and slide animations for opening the modal
-  const openModal = () => {
-    setModalVisible(true);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  // Fade and slide animations for closing the modal
-  const closeModal = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 50,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setModalVisible(false));
-  };
-
-  // Function to handle the pull-to-refresh action
-  const onRefresh = async () => {
-    setRefreshing(true); // Start refreshing
     try {
-      // Re-fetch balance and transactions
-      await checkBalance();
-      await fetchTransactions();
+      // Initialize ECPair with secp256k1
+      const ECPair = ECPairFactory(ecc);
+
+      // Generate random bytes using react-native-get-random-values
+      const randomBytes = new Uint8Array(32);
+      getRandomValues(randomBytes);
+
+      // Create key pair from random bytes with Dogecoin network parameters
+      const keyPair = ECPair.fromPrivateKey(Buffer.from(randomBytes), {
+        network: dogecoin,
+      });
+
+      // Get public and private keys
+      const publicKey = keyPair.publicKey.toString("hex");
+      const privateKey = keyPair.privateKey.toString("hex");
+      const wif = keyPair.toWIF();
+
+      // Generate Legacy P2PKH address
+      const p2pkh = bitcoin.payments.p2pkh({
+        pubkey: keyPair.publicKey,
+        network: dogecoin,
+      });
+
+      // Generate P2SH address
+      const p2sh = bitcoin.payments.p2sh({
+        redeem: bitcoin.payments.p2pk({
+          pubkey: keyPair.publicKey,
+          network: dogecoin,
+        }),
+        network: dogecoin,
+      });
+
+      // Update state with new wallet data
+      setWalletData({
+        legacyAddress: p2pkh.address, // Starts with 'D'
+        p2shAddress: p2sh.address, // Starts with 'A'
+        publicKey,
+        privateKey,
+        wif,
+      });
+
+      Alert.alert(
+        "Dogecoin Wallet Generated Successfully",
+        "Your wallet has two addresses:\n\n" +
+          "• Legacy Address (starts with 'D')\n" +
+          "• Script Address (starts with 'A')\n\n" +
+          "Legacy addresses are most widely supported for Dogecoin.",
+        [
+          {
+            text: "I Understand",
+            onPress: () => showSecurityAlert(),
+          },
+        ]
+      );
     } catch (error) {
-      console.log("Error refreshing data:", error);
+      console.error("Error generating wallet:", error);
+      Alert.alert(
+        "Error",
+        "Failed to generate Dogecoin wallet. Please try again."
+      );
     } finally {
-      setRefreshing(false); // Stop refreshing
+      setLoading(false);
     }
   };
 
-  const openExplore = async () => {
-    try {
-      Linking.openURL("https://testnet.lumenscan.io/account/" + publicKey);
-    } catch (error) {
-      console.log("https://testnet.lumenscan.io/account/" + publicKey);
-    }
+  const showSecurityAlert = () => {
+    Alert.alert(
+      "Security Warning",
+      "• Never share your private key or WIF with anyone\n" +
+        "• Store your keys in a secure location\n" +
+        "• Make sure to backup your wallet information\n" +
+        "• Consider using a hardware wallet for large amounts",
+      [{ text: "I Understand", style: "default" }]
+    );
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 110, // Adjust based on your header height
-          backgroundColor: headerBackgroundColor,
-          zIndex: 1, // Ensure it sits above other components
-        }}
-      />
-      <LinearGradient
-        colors={
-          isDarkMode
-            ? ["#296fc5", "#3d3d3d", "#3d3d3d", "#333333"]
-            : ["#296fc5", "#5d97dd", "#ffffff", "#f0f0f0"]
-        }
-        style={StyleSheet.absoluteFill}
-      />
-      <Animated.ScrollView
-        style={{ flex: 1 }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false } // Use native driver for better performance
-        )}
-        scrollEventThrottle={16} // Update every 16ms
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={{ flex: 1 }}>
-          <ScrollView style={{ padding: 15, minHeight: 140 }}>
-            <View style={styles.container}>
-              <View style={styles.balanceInfo}>
-                <Text selectable style={styles.balanceText}>
-                  {/* {balance} */} 0.000 DOGE
-                </Text>
-                <Text style={styles.fiatBalanceText}>
-                  {/* ${fiatBalance ? fiatBalance : "0.00"} */}$0.00
-                </Text>
-              </View>
-              {/* Action Buttons */}
-              <WalletActions
-                isDarkMode={isDarkMode}
-                setSendModalVisible={openExplore}
-                setReceiveModalVisible={openExplore}
-                openExplore={openExplore}
-              />
-            </View>
-          </ScrollView>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Dogecoin Wallet Generator</Text>
+
+        <View style={styles.content}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Legacy Address (P2PKH):</Text>
+            <TextInput
+              style={styles.input}
+              value={walletData.legacyAddress}
+              editable={false}
+              selectTextOnFocus
+              placeholder="Will start with 'D'"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Script Address (P2SH):</Text>
+            <TextInput
+              style={styles.input}
+              value={walletData.p2shAddress}
+              editable={false}
+              selectTextOnFocus
+              placeholder="Will start with 'A'"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Public Key:</Text>
+            <TextInput
+              style={styles.input}
+              value={walletData.publicKey}
+              editable={false}
+              selectTextOnFocus
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Private Key:</Text>
+            <TextInput
+              style={styles.input}
+              value={walletData.privateKey}
+              editable={false}
+              selectTextOnFocus
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>WIF (Wallet Import Format):</Text>
+            <TextInput
+              style={styles.input}
+              value={walletData.wif}
+              editable={false}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: "#BA9F33" }]}
+            onPress={generateWallet}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Generate New Wallet</Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={styles.infoText}>
+            ℹ️ Legacy addresses (D) are most widely supported for Dogecoin
+          </Text>
         </View>
-      </Animated.ScrollView>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "90%",
-    padding: 20,
-    backgroundColor: "#333333",
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 10,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "white",
-  },
-  secretKeyText: {
-    fontSize: 16,
-    marginBottom: 15,
-    textAlign: "center",
-    color: "white",
-  },
-  deleteButton: {
-    backgroundColor: "#ff4d4d",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginTop: 15,
-  },
-  deleteButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  balanceInfo: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  actionButtonText: {
-    color: "black",
-    fontWeight: "regular",
-    fontSize: 16,
-    paddingTop: 5,
-  },
-  darkText: {
-    color: "white",
-  },
-  transactionHistory: {
-    marginTop: 20,
-    width: "100%",
-  },
-  transactionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "black",
-  },
-  transactionItem: {
-    backgroundColor: "#d9d9d9",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  transactionDate: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 5,
-  },
-  transactionContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  transactionType: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "black",
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  amountReceived: {
-    color: "green",
-  },
-  amountSent: {
-    color: "red",
-  },
-  transactionAddress: {
-    fontSize: 14,
-    color: "#6a6a6a",
-    marginTop: 5,
-  },
   container: {
     flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    paddingTop: 60,
+    backgroundColor: "#f5f5f5",
   },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 20,
-  },
-  actionButton: {
-    backgroundColor: "#d9d9d9",
-    width: 70, // Set fixed width
-    height: 70, // Set fixed height
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  darkButton: {
-    color: "#fff",
-    backgroundColor: "#333",
+  scrollContent: {
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "#0078FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-  },
-  walletInfo: {
-    marginTop: 30,
-    width: "100%",
-  },
-  balanceText: {
-    color: "#ffffff",
-    fontSize: 42,
-    fontWeight: "bold",
-    marginTop: 20,
     textAlign: "center",
+    marginVertical: 20,
+    color: "#333",
   },
-  fiatBalanceText: {
-    color: "#adadad",
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
+  content: {
+    padding: 16,
+  },
+  inputContainer: {
+    marginBottom: 16,
   },
   label: {
-    fontWeight: "bold",
-    marginTop: 10,
+    fontSize: 16,
+    marginBottom: 8,
+    color: "#333",
+    fontWeight: "500",
   },
   input: {
+    backgroundColor: "white",
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    marginTop: 5,
-    width: "80%",
-    height: 100,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: "#333",
+  },
+  button: {
+    backgroundColor: "#007AFF",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  infoText: {
+    textAlign: "center",
+    marginTop: 16,
+    color: "#666",
+    fontSize: 14,
   },
 });
 
-export default DogecoinScreen;
+export default DogecoinWallet;

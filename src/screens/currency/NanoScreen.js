@@ -15,6 +15,7 @@ import {
   Linking,
   Image,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { wallet, block, tools } from "nanocurrency-web";
@@ -66,6 +67,8 @@ export default function NanoScreen() {
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
   const [derivedAccountsModalVisible, setDerivedAccountsModalVisible] =
     useState(false);
+
+  const [loading, setLoading] = useState(false);
 
   const [receiveModalVisible, setReceiveModalVisible] = useState(false);
   const [sendModalVisible, setSendModalVisible] = useState(false);
@@ -238,11 +241,14 @@ export default function NanoScreen() {
       }
     } catch (error) {
       console.log("Error loading wallet:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Load the wallet when the component mounts
   useEffect(() => {
+    setLoading(true);
     loadWalletFromSecureStore();
   }, []);
 
@@ -458,6 +464,14 @@ export default function NanoScreen() {
       return null;
     }
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#F7931A" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

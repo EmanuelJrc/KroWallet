@@ -25,6 +25,8 @@ const CRYPTOCURRENCY_ICONS = {
   Ethereum: require("../../assets/ethereum.png"),
   Dogecoin: require("../../assets/dogecoin.png"),
   Bnb: require("../../assets/bnb.png"),
+  BitcoinCash: require("../../assets/bitcoin-cash.png"),
+  Zcash: require("../../assets/zcash.png"),
 };
 
 const HomeScreen = ({ navigation }) => {
@@ -42,13 +44,15 @@ const HomeScreen = ({ navigation }) => {
     { name: "Stellar", icon: CRYPTOCURRENCY_ICONS.Stellar },
     { name: "Ethereum", icon: CRYPTOCURRENCY_ICONS.Ethereum },
     { name: "BNB", icon: CRYPTOCURRENCY_ICONS.Bnb },
-    { name: "XRP", icon: CRYPTOCURRENCY_ICONS.Xrp },
-    { name: "Kava", icon: CRYPTOCURRENCY_ICONS.Kava },
-    { name: "Cardano", icon: CRYPTOCURRENCY_ICONS.Cardano },
     { name: "Bitcoin", icon: CRYPTOCURRENCY_ICONS.Bitcoin },
     { name: "Litecoin", icon: CRYPTOCURRENCY_ICONS.Litecoin },
     { name: "Dash", icon: CRYPTOCURRENCY_ICONS.Dash },
     { name: "Dogecoin", icon: CRYPTOCURRENCY_ICONS.Dogecoin },
+    { name: "BitcoinCash", icon: CRYPTOCURRENCY_ICONS.BitcoinCash },
+    { name: "Zcash", icon: CRYPTOCURRENCY_ICONS.Zcash },
+    { name: "XRP", icon: CRYPTOCURRENCY_ICONS.Xrp },
+    { name: "Kava", icon: CRYPTOCURRENCY_ICONS.Kava },
+    { name: "Cardano", icon: CRYPTOCURRENCY_ICONS.Cardano },
   ];
 
   return (

@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
-    marginTop: 15,
+    marginTop: 50,
     marginBottom: 15,
   },
   deleteButtonText: {
@@ -122,6 +122,9 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  closeButton: {
+    marginTop: 20,
   },
   darkButton: {
     color: "#fff",

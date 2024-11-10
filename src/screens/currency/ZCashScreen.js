@@ -15,24 +15,46 @@ import ECPairFactory from "ecpair";
 import ecc from "@bitcoinerlab/secp256k1";
 import * as bitcoin from "bitcoinjs-lib";
 import * as Clipboard from "expo-clipboard";
+import { Buffer } from "@craftzdog/react-native-buffer";
+import { createHash } from "create-hash";
+import * as bs58 from "bs58";
 
-// Define Dash network parameters
-const dash = {
-  messagePrefix: "\x19Dash Signed Message:\n",
-  bech32: "", // Dash doesn't use bech32
+// Custom base58check encoding function for ZCash transparent addresses
+const base58checkEncode = (payload, version) => {
+  console.log("Using version:", version); // Ensure it’s 0x1C or 28
+
+  // Create a buffer with a one-byte version instead of two
+  const versionBuffer = Buffer.alloc(1);
+  versionBuffer.writeUInt8(version); // Using 0x1C for ZCash
+
+  const versionedPayload = Buffer.concat([versionBuffer, payload]);
+
+  // Calculate the double SHA-256 checksum and take the first 4 bytes
+  const checksum = createHash("sha256")
+    .update(createHash("sha256").update(versionedPayload).digest())
+    .digest()
+    .slice(0, 4);
+
+  const finalBuffer = Buffer.concat([versionedPayload, checksum]);
+
+  return bs58.encode(finalBuffer);
+};
+
+// Define ZCash network parameters
+const zec = {
+  messagePrefix: "\x18ZCash Signed Message:\n",
+  bech32: "",
   bip32: {
     public: 0x0488b21e,
     private: 0x0488ade4,
   },
-  pubKeyHash: 0x4c, // Addresses start with 'X'
-  scriptHash: 0x10,
-  wif: 0xcc, // Private keys start with '7' or 'X'
+  pubKeyHash: 0x1cb8, // Transparent addresses start with 't1'
+  wif: 0x80,
 };
 
-const DashWallet = () => {
+const ZCashWallet = () => {
   const [walletData, setWalletData] = useState({
-    address: "",
-    p2shAddress: "",
+    transparentAddress: "", // t1... address
     publicKey: "",
     privateKey: "",
     wif: "",
@@ -40,6 +62,14 @@ const DashWallet = () => {
   const [loading, setLoading] = useState(false);
   const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [showWIF, setShowWIF] = useState(false);
+
+  // Generate ZCash transparent address with additional logging
+  const generateZCashAddress = (publicKeyBuffer) => {
+    console.log("Public Key Buffer:", publicKeyBuffer.toString("hex"));
+    const hash160 = bitcoin.crypto.hash160(publicKeyBuffer);
+    console.log("Hash160 of Public Key:", hash160.toString("hex"));
+    return base58checkEncode(hash160, 0x1cb8);
+  };
 
   const copyToClipboard = async (text, label) => {
     try {
@@ -55,17 +85,18 @@ const DashWallet = () => {
   };
 
   const exportWalletData = async () => {
-    const walletExport = `DASH WALLET BACKUP
+    const walletExport = `ZCASH WALLET BACKUP
 DO NOT SHARE THESE DETAILS WITH ANYONE!
 Generated: ${new Date().toISOString()}
 
-Standard Address: ${walletData.address}
-P2SH Address: ${walletData.p2shAddress}
+Transparent Address: ${walletData.transparentAddress}
 Public Key: ${walletData.publicKey}
 Private Key: ${walletData.privateKey}
 WIF: ${walletData.wif}
 
-KEEP THIS INFORMATION SECURE!`;
+KEEP THIS INFORMATION SECURE!
+Note: This wallet generates transparent addresses only. For shielded transactions, 
+please use a full ZCash wallet that supports z-addresses.`;
 
     try {
       await Clipboard.setStringAsync(walletExport);
@@ -93,42 +124,39 @@ KEEP THIS INFORMATION SECURE!`;
       const randomBytes = new Uint8Array(32);
       getRandomValues(randomBytes);
 
+      console.log(
+        "Random Bytes for Private Key:",
+        Buffer.from(randomBytes).toString("hex")
+      );
+
       const keyPair = ECPair.fromPrivateKey(Buffer.from(randomBytes), {
-        network: dash,
+        network: bitcoin.networks.bitcoin, // Use bitcoin parameters for testing
       });
 
       const publicKey = keyPair.publicKey.toString("hex");
       const privateKey = keyPair.privateKey.toString("hex");
       const wif = keyPair.toWIF();
 
-      // Generate standard P2PKH address
-      const p2pkh = bitcoin.payments.p2pkh({
-        pubkey: keyPair.publicKey,
-        network: dash,
-      });
+      console.log("Generated Public Key:", publicKey);
+      console.log("Generated Private Key:", privateKey);
+      console.log("Generated WIF:", wif);
 
-      // Generate P2SH address
-      const p2sh = bitcoin.payments.p2sh({
-        redeem: bitcoin.payments.p2pk({
-          pubkey: keyPair.publicKey,
-          network: dash,
-        }),
-        network: dash,
-      });
+      // Generate t1 address (transparent)
+      const transparentAddress = generateZCashAddress(keyPair.publicKey);
+
+      console.log("Generated Transparent Address:", transparentAddress);
 
       setWalletData({
-        address: p2pkh.address,
-        p2shAddress: p2sh.address,
+        transparentAddress,
         publicKey,
         privateKey,
         wif,
       });
 
       Alert.alert(
-        "Dash Wallet Generated Successfully",
-        "Your wallet addresses have been generated.\n\n" +
-          "• Standard Address (starts with 'X')\n" +
-          "• Script Address (P2SH)\n\n" +
+        "ZCash Wallet Generated Successfully",
+        "Your transparent addresses have been generated.\n\n" +
+          "• Transparent Address (starts with 't1')\n" +
           "Please backup your private keys immediately.",
         [
           {
@@ -139,7 +167,10 @@ KEEP THIS INFORMATION SECURE!`;
       );
     } catch (error) {
       console.error("Error generating wallet:", error);
-      Alert.alert("Error", "Failed to generate Dash wallet. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to generate ZCash wallet. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -153,6 +184,8 @@ KEEP THIS INFORMATION SECURE!`;
         "2. Use the Export function to backup all wallet data\n" +
         "3. Never share these details with anyone\n" +
         "4. Keep multiple secure backups\n\n" +
+        "Note: This generates transparent addresses only. For private transactions,\n" +
+        "use a full ZCash wallet with shielded address support.\n\n" +
         "Would you like to export your wallet data now?",
       [
         {
@@ -180,42 +213,23 @@ KEEP THIS INFORMATION SECURE!`;
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Dash Wallet Generator</Text>
+        <Text style={styles.title}>ZCash Wallet Generator</Text>
 
         <View style={styles.content}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Standard Address:</Text>
+            <Text style={styles.label}>Transparent Address:</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={[styles.input, styles.inputWithButton]}
-                value={walletData.address}
+                value={walletData.transparentAddress}
                 editable={false}
                 selectTextOnFocus
-                placeholder="Will start with 'X'"
+                placeholder="Will start with 't1'"
               />
-              {walletData.address && (
+              {walletData.transparentAddress && (
                 <CopyButton
-                  text={walletData.address}
-                  label="Standard Address"
-                />
-              )}
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Script Address (P2SH):</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={[styles.input, styles.inputWithButton]}
-                value={walletData.p2shAddress}
-                editable={false}
-                selectTextOnFocus
-                placeholder="P2SH Address"
-              />
-              {walletData.p2shAddress && (
-                <CopyButton
-                  text={walletData.p2shAddress}
-                  label="P2SH Address"
+                  text={walletData.transparentAddress}
+                  label="Transparent Address"
                 />
               )}
             </View>
@@ -285,7 +299,7 @@ KEEP THIS INFORMATION SECURE!`;
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#008DE4" }]}
+            style={[styles.button, { backgroundColor: "#F4B728" }]} // ZCash yellow
             onPress={generateWallet}
             disabled={loading}
           >
@@ -307,6 +321,8 @@ KEEP THIS INFORMATION SECURE!`;
 
           <Text style={styles.securityText}>
             🔒 Make sure to save your Private Key and WIF in a secure location
+            {"\n"}
+            Note: This generates transparent addresses only
           </Text>
         </View>
       </ScrollView>
@@ -347,7 +363,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   toggleButton: {
-    color: "#008DE4",
+    color: "#F4B728", // ZCash yellow
     fontSize: 14,
     fontWeight: "500",
   },
@@ -371,7 +387,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 0,
   },
   copyButton: {
-    backgroundColor: "#008DE4",
+    backgroundColor: "#F4B728", // ZCash yellow
     borderTopRightRadius: 8,
     borderBottomRightRadius: 8,
     padding: 12,
@@ -385,7 +401,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#F4B728", // ZCash yellow
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -407,4 +423,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DashWallet;
+export default ZCashWallet;
