@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useRef,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -22,73 +28,71 @@ import { wallet, block, tools } from "bananocurrency-web";
 import {
   getAccountBalance,
   sendTransaction,
-  getAccountHistory,
   handleReceivableTransactions,
   generateWork,
 } from "../../services/banano/bananoApi";
 import * as SecureStore from "expo-secure-store";
 import { fetchAndConvertTransactions } from "../../services/banano/accountHistory";
 import axios from "axios";
-import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
-import Icon from "react-native-vector-icons/Ionicons"; // Importing Ionicons
+import Icon from "react-native-vector-icons/Ionicons";
 import { styles } from "../../styles/nanoStyles";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, Entypo } from "@expo/vector-icons";
-import SendNano from "../../components/SendNano";
-import ReceiveNano from "../../components/ReceiveNano";
-import WalletActionButton from "../../components/WalletActionButton";
-import TransactionList from "../../components/NanoTransactionList";
 import { ThemeContext } from "../../utils/ThemeContext";
 import WalletActions from "../../components/WalletActions";
 import useModalAnimation from "../../hooks/useModalAnimation";
 import GradientBackground from "../../components/GradientBackground";
 import BananoTransactionList from "../../components/BananoTransactionList";
 import StellarPriceDetail from "../../components/StellarPriceDetail";
+import SendModal from "../../components/modals/SendModal";
+import ReceiveModal from "../../components/modals/ReceiveModal";
+import { common } from "../../styles/common";
+import WalletDetailsModal from "../../components/modals/WalletDetailsModal";
+import DerivedAccountsModal from "../../components/modals/DerivedAccModal";
 
 const NODE_URL = "https://nodes.nanswap.com/BAN";
 
 export default function BananoScreen() {
+  const navigation = useNavigation();
+  const { isDarkMode } = useContext(ThemeContext);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
   const [mnemonic, setMnemonic] = useState("");
   const [inputMnemonic, setInputMnemonic] = useState("");
   const [address, setAddress] = useState("");
   const [privateKey, setPrivateKey] = useState("");
-  const [transactions, setTransactions] = useState([]);
   const [walletCreated, setWalletCreated] = useState(false);
   const [accounts, setAccounts] = useState([]);
-  const [numberOfAccounts, setNumberOfAccounts] = useState(1);
-  const [recipientAddress, setRecipientAddress] = useState("");
-  const [balance, setBalance] = useState(null); // Add state for balance
+
   const [fiatBalance, setFiatBalance] = useState(null);
   const [price, setPrice] = useState(null);
   const [percentageChange, setPercentageChange] = useState(null);
   const [priceChange, setPriceChange] = useState(0);
   const [chartData, setChartData] = useState([]);
   const [lastTransactionHash, setLastTransactionHash] = useState("");
-  const [refreshing, setRefreshing] = useState(false); // State for refreshing
+
+  // State Managment
+  const [transactions, setTransactions] = useState([]);
+  const [balance, setBalance] = useState(null);
+  const [numberOfAccounts, setNumberOfAccounts] = useState(1);
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [amountToSend, setAmountToSend] = useState("");
+  const [transactionStatus, setTransactionStatus] = useState("");
+  const [receiveModalVisible, setReceiveModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Modal States
+  const [receivingStatus, setReceivingStatus] = useState(null);
+  const [sendModalVisible, setSendModalVisible] = useState(false);
   const [derivedAccountsModalVisible, setDerivedAccountsModalVisible] =
     useState(false);
 
-  const [loading, setLoading] = useState(false);
-
-  const [receiveModalVisible, setReceiveModalVisible] = useState(false);
-  const [sendModalVisible, setSendModalVisible] = useState(false);
-  const [receivingStatus, setReceivingStatus] = useState(null);
-
-  const [sendToAddress, setSendToAddress] = useState("");
-  const [amountToSend, setAmountToSend] = useState("");
-  const [transactionStatus, setTransactionStatus] = useState("");
-
-  const [receiveTransactionHash, setReceiveTransactionHash] = useState("");
-  const [receiveAmount, setReceiveAmount] = useState("");
-
-  const navigation = useNavigation(); // Use navigation hook
   const { modalVisible, fadeAnim, translateYAnim, openModal, closeModal } =
     useModalAnimation();
 
-  const { isDarkMode } = useContext(ThemeContext);
-
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const [loading, setLoading] = useState(false);
+  const [sendToAddress, setSendToAddress] = useState("");
+  const [receiveTransactionHash, setReceiveTransactionHash] = useState("");
+  const [receiveAmount, setReceiveAmount] = useState("");
 
   // Define the header background color interpolation
   const headerBackgroundColor = scrollY.interpolate({
@@ -97,16 +101,146 @@ export default function BananoScreen() {
     extrapolate: "clamp", // Prevents values from exceeding the defined range
   });
 
-  const copyPrivateKeyToClipboard = async () => {
-    await Clipboard.setStringAsync(privateKey);
-    alert("Address copied to clipboard");
-  };
-  const copyMnemonicToClipboard = async () => {
-    await Clipboard.setStringAsync(mnemonic);
-    alert("Address copied to clipboard");
+  // Clipboard functions
+  const copyToClipboard = async (text, type) => {
+    await Clipboard.setStringAsync(text);
+    alert(`${type} copied to clipboard`);
   };
 
-  // Set up header with the info button
+  // Data Fetching
+  const fetchTransactions = async () => {
+    if (!address) {
+      console.log("Address is undefined. Cannot fetch transactions.");
+      return;
+    }
+    try {
+      const transactionsInNano = await fetchAndConvertTransactions(address);
+      setTransactions(transactionsInNano);
+    } catch (error) {
+      console.log("Error fetching transactions:", error);
+    }
+  };
+
+  const checkBalance = async () => {
+    try {
+      const balance = await getAccountBalance(address);
+      setBalance(balance);
+      setTransactionStatus(`Balance: ${balance} BAN`);
+    } catch (error) {
+      setTransactionStatus("Error checking balance. Please try again.");
+    }
+  };
+
+  // Transaction Handling
+  const handleSendTransaction = async () => {
+    try {
+      // Fetch the frontier using account_info first
+      const accountInfoResponse = await axios.post(NODE_URL, {
+        action: "account_info",
+        account: address,
+      });
+
+      if (accountInfoResponse.data.error) {
+        setTransactionStatus(
+          `Error fetching account info: ${accountInfoResponse.data.error}`
+        );
+        return;
+      }
+
+      // Fetch the balance first
+      const balance = await getAccountBalance(address);
+      const balanceInRaw = tools.convert(balance, "BAN", "RAW");
+
+      const frontier = accountInfoResponse.data.frontier;
+
+      // Ensure the frontier is valid
+      if (!frontier || frontier === "0") {
+        setTransactionStatus("Invalid frontier retrieved.");
+        return;
+      }
+
+      // Generate work for the frontier
+      const generatedWork = await generateWork(frontier);
+
+      if (!generatedWork) {
+        setTransactionStatus("Failed to generate work");
+        return;
+      }
+
+      const data = {
+        walletBalanceRaw: balanceInRaw, // Example balance
+        fromAddress: address,
+        toAddress: recipientAddress,
+        representativeAddress:
+          "ban_3bancat34ba3xkszt3f4wdyx8mih8d7nszi1raoghfmqch78eai3y3jmga1x",
+        frontier: frontier,
+        amountRaw: tools.convert(amountToSend, "BAN", "RAW"),
+        work: generatedWork,
+      };
+
+      const signedBlock = block.send(data, privateKey);
+      const result = await sendTransaction(signedBlock);
+      if (result) {
+        setTransactionStatus(`Transaction sent: ${result.hash}`);
+        alert(`Sending ${sendAmount} to ${recipientAddress}`);
+      } else {
+        setTransactionStatus("Failed to send transaction.");
+      }
+    } catch (error) {
+      setTransactionStatus("Error sending transaction: " + error.message);
+    }
+  };
+
+  const handleReceiveNano = async () => {
+    setReceivingStatus("Checking for receivable transactions...");
+    try {
+      const result = await handleReceivableTransactions(address, privateKey);
+      if (result && result.length > 0) {
+        setReceivingStatus(`Received ${result.length} transaction(s)`);
+        await Promise.all([checkBalance(), fetchTransactions()]);
+      } else {
+        setReceivingStatus("No pending transactions to receive");
+      }
+    } catch (error) {
+      setReceivingStatus(`Error receiving: ${error.message}`);
+    }
+  };
+
+  // Refresh Handling
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        handleReceiveNano(),
+        checkBalance(),
+        fetchTransactions(),
+        fetchCurrentPrice(),
+      ]);
+    } catch (error) {
+      console.log("Refresh Error:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Navigation handling
+  const openExplore = () => {
+    Linking.openURL(`https://creeper.banano.cc/account/${address}`);
+  };
+
+  // Effects
+  useEffect(() => {
+    if (walletCreated && address) {
+      Promise.all([
+        fetchTransactions(),
+        fetchHistoricalData(),
+        checkBalance(),
+        fetchCurrentPrice(),
+      ]);
+    }
+  }, [walletCreated, address]);
+
+  // Set up header
   useEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -153,31 +287,7 @@ export default function BananoScreen() {
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
-
-  // Fetch transactions for the account
-  const fetchTransactions = async () => {
-    if (!address) {
-      console.log("Address is undefined. Cannot fetch transactions.");
-      return;
-    }
-    try {
-      const transactionsInNano = await fetchAndConvertTransactions(address);
-      setTransactions(transactionsInNano);
-    } catch (error) {
-      console.log("Error fetching transactions:", error);
-    }
-  };
-
-  // Load transactions when the wallet is created and address is available
-  useEffect(() => {
-    if (walletCreated && address) {
-      fetchTransactions();
-      fetchCurrentPrice();
-      fetchHistoricalData();
-      checkBalance();
-    }
-  }, [walletCreated, address]);
+  }, [navigation, isDarkMode]);
 
   // Function to securely save the mnemonic
   const saveWalletToSecureStore = async (mnemonic) => {
@@ -189,32 +299,6 @@ export default function BananoScreen() {
     }
   };
 
-  // Function to handle the pull-to-refresh action
-  const onRefresh = async () => {
-    setRefreshing(true); // Start refreshing
-    try {
-      // Receive pending transactions
-      const receivedTransactions = await handleReceivableTransactions(
-        address,
-        privateKey
-      );
-      if (receivedTransactions && receivedTransactions.length > 0) {
-        setReceivingStatus(
-          `Received ${receivedTransactions.length} transaction(s)`
-        );
-      } else {
-        setReceivingStatus("No pending transactions to receive");
-      }
-      // Re-fetch balance and transactions
-      await checkBalance();
-      await fetchTransactions();
-      await fetchCurrentPrice();
-    } catch (error) {
-      console.log("Error refreshing data:", error);
-    } finally {
-      setRefreshing(false); // Stop refreshing
-    }
-  };
   // Function to load the wallet from SecureStore
   const loadWalletFromSecureStore = async () => {
     try {
@@ -281,90 +365,22 @@ export default function BananoScreen() {
     }
   };
 
-  // Derive more accounts from the seed
-  const deriveAccounts = (fromIndex, toIndex) => {
-    try {
-      const moreAccounts = wallet.accounts(
-        wallet.fromMnemonic(mnemonic).seed,
-        fromIndex,
-        toIndex
-      );
-      setAccounts((prevAccounts) => [...prevAccounts, ...moreAccounts]);
-    } catch (error) {
-      alert("Error deriving accounts. Please try again.");
-    }
-  };
-
-  // Get the balance of an account
-  const checkBalance = async () => {
-    try {
-      const balance = await getAccountBalance(address);
-      setBalance(balance);
-      setTransactionStatus(`Balance: ${balance} BAN`);
-    } catch (error) {
-      setTransactionStatus("Error checking balance. Please try again.");
-    }
-  };
-
-  // Send BAN transaction
-  const handleSendTransaction = async () => {
-    try {
-      // Fetch the frontier using account_info first
-      const accountInfoResponse = await axios.post(NODE_URL, {
-        action: "account_info",
-        account: address,
-      });
-
-      if (accountInfoResponse.data.error) {
-        setTransactionStatus(
-          `Error fetching account info: ${accountInfoResponse.data.error}`
+  // Add this handler function with your other handlers
+  const handleDeriveAccounts = useCallback(
+    (fromIndex, toIndex) => {
+      try {
+        const moreAccounts = wallet.accounts(
+          wallet.fromMnemonic(mnemonic).seed,
+          fromIndex,
+          toIndex
         );
-        return;
+        setAccounts((prevAccounts) => [...prevAccounts, ...moreAccounts]);
+      } catch (error) {
+        alert("Error deriving accounts. Please try again.");
       }
-
-      // Fetch the balance first
-      const balance = await getAccountBalance(address);
-      const balanceInRaw = tools.convert(balance, "BAN", "RAW");
-
-      const frontier = accountInfoResponse.data.frontier;
-
-      // Ensure the frontier is valid
-      if (!frontier || frontier === "0") {
-        setTransactionStatus("Invalid frontier retrieved.");
-        return;
-      }
-
-      // Generate work for the frontier
-      const generatedWork = await generateWork(frontier);
-
-      if (!generatedWork) {
-        setTransactionStatus("Failed to generate work");
-        return;
-      }
-
-      const data = {
-        walletBalanceRaw: balanceInRaw, // Example balance
-        fromAddress: address,
-        toAddress: recipientAddress,
-        representativeAddress:
-          "ban_3bancat34ba3xkszt3f4wdyx8mih8d7nszi1raoghfmqch78eai3y3jmga1x",
-        frontier: frontier,
-        amountRaw: tools.convert(amountToSend, "BAN", "RAW"),
-        work: generatedWork,
-      };
-
-      const signedBlock = block.send(data, privateKey);
-      const result = await sendTransaction(signedBlock);
-      if (result) {
-        setTransactionStatus(`Transaction sent: ${result.hash}`);
-        alert(`Sending ${sendAmount} to ${recipientAddress}`);
-      } else {
-        setTransactionStatus("Failed to send transaction.");
-      }
-    } catch (error) {
-      setTransactionStatus("Error sending transaction: " + error.message);
-    }
-  };
+    },
+    [mnemonic]
+  );
 
   // Function to delete the wallet
   const deleteWallet = async () => {
@@ -378,31 +394,6 @@ export default function BananoScreen() {
       setTransactionStatus("Wallet deleted successfully");
     } catch (error) {
       console.log("Error deleting wallet:", error);
-    }
-  };
-
-  const openExplore = async () => {
-    try {
-      Linking.openURL("https://creeper.banano.cc/account/" + address);
-    } catch (error) {
-      console.log("https://creeper.banano.cc/account/" + address);
-    }
-  };
-
-  const handleReceiveNano = async () => {
-    setReceivingStatus("Checking for receivable transactions...");
-    try {
-      const result = await handleReceivableTransactions(address, privateKey);
-      if (result && result.length > 0) {
-        setReceivingStatus(`Received ${result.length} transaction(s)`);
-        // Refresh balance and transactions
-        await checkBalance();
-        await fetchTransactions();
-      } else {
-        setReceivingStatus("No pending transactions to receive");
-      }
-    } catch (error) {
-      setReceivingStatus(`Error receiving: ${error.message}`);
     }
   };
 
@@ -464,15 +455,10 @@ export default function BananoScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 110, // Adjust based on your header height
-          backgroundColor: headerBackgroundColor,
-          zIndex: 1, // Ensure it sits above other components
-        }}
+        style={[
+          common.headerBackground,
+          { backgroundColor: headerBackgroundColor },
+        ]}
       />
       <GradientBackground isDarkMode={isDarkMode} />
       <Animated.ScrollView
@@ -489,11 +475,7 @@ export default function BananoScreen() {
         <View style={{ flex: 1 }}>
           <ScrollView style={{ padding: 15, minHeight: 140 }}>
             <View style={styles.container}>
-              {/* Add the SendCryptoModule */}
-              {/* <SendCryptoModule address={address} privateKey={privateKey} /> */}
-
-              {/* Modal to display QR code and address */}
-              <ReceiveNano
+              <ReceiveModal
                 name={"Banano"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}
@@ -501,56 +483,18 @@ export default function BananoScreen() {
                 onReceive={handleReceiveNano}
                 receivingStatus={receivingStatus}
               />
-
-              <Modal
-                transparent
+              <WalletDetailsModal
                 visible={modalVisible}
-                onRequestClose={closeModal}
-              >
-                <View style={styles.overlay}>
-                  <Animated.View
-                    style={[
-                      styles.modalContent,
-                      {
-                        opacity: fadeAnim,
-                        transform: [{ translateY: translateYAnim }],
-                      },
-                    ]}
-                  >
-                    <Text style={styles.modalTitle}>Mnemonic</Text>
-                    <Text selectable style={styles.secretKeyText}>
-                      {mnemonic}
-                    </Text>
-                    <Button
-                      title="Copy Mnemonic"
-                      onPress={() => {
-                        copyMnemonicToClipboard();
-                      }}
-                    />
-                    <Text style={styles.modalTitle}>Private Key</Text>
-                    <Text selectable style={styles.secretKeyText}>
-                      {privateKey}
-                    </Text>
-                    <Button
-                      title="Copy Private Key"
-                      onPress={() => {
-                        copyPrivateKeyToClipboard();
-                      }}
-                    />
-
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={deleteWallet}
-                    >
-                      <Text style={styles.deleteButtonText}>Delete Wallet</Text>
-                    </TouchableOpacity>
-                    <Button title="Close" onPress={closeModal} />
-                  </Animated.View>
-                </View>
-              </Modal>
-
+                onClose={closeModal}
+                mnemonic={mnemonic}
+                privateKey={privateKey}
+                onCopy={copyToClipboard}
+                onDelete={deleteWallet}
+                fadeAnim={fadeAnim}
+                translateYAnim={translateYAnim}
+              />
               {/* Modal to send Banano */}
-              <SendNano
+              <SendModal
                 name={"Banano"}
                 ticker={"BAN"}
                 visible={sendModalVisible}
@@ -563,58 +507,17 @@ export default function BananoScreen() {
                 setAmountToSend={setAmountToSend}
                 transactionStatus={transactionStatus}
               />
-
-              {/* Modal for Derived Accounts */}
-              <Modal
-                animationType="slide"
-                transparent={true}
+              {/* Add the DerivedAccountsModal component */}
+              <DerivedAccountsModal
                 visible={derivedAccountsModalVisible}
-                onRequestClose={() => setDerivedAccountsModalVisible(false)}
-              >
-                <View style={styles.modalContainer}>
-                  <View style={styles.modalView}>
-                    <Text style={styles.modalText}>Derived Accounts</Text>
-
-                    {/* Display all derived accounts */}
-                    {accounts.map((account, index) => (
-                      <View key={index} style={styles.accountContainer}>
-                        <Text>Account {index + 1}</Text>
-                        <Text>Address: {account.address}</Text>
-                      </View>
-                    ))}
-
-                    {/* Input to derive new accounts */}
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Number of accounts to derive"
-                      keyboardType="numeric"
-                      onChangeText={(text) =>
-                        setNumberOfAccounts(parseInt(text) || 1)
-                      }
-                    />
-                    <Button
-                      title={`Derive ${numberOfAccounts} More Accounts`}
-                      onPress={() =>
-                        deriveAccounts(
-                          accounts.length,
-                          accounts.length + numberOfAccounts
-                        )
-                      }
-                    />
-
-                    {/* Close the modal */}
-                    <Pressable
-                      style={[styles.button, styles.buttonClose]}
-                      onPress={() => setDerivedAccountsModalVisible(false)}
-                    >
-                      <Text style={styles.textStyle}>Close</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </Modal>
-
+                onClose={() => setDerivedAccountsModalVisible(false)}
+                accounts={accounts}
+                numberOfAccounts={numberOfAccounts}
+                setNumberOfAccounts={setNumberOfAccounts}
+                deriveAccounts={handleDeriveAccounts}
+              />
               {!walletCreated ? (
-                <>
+                <View style={styles.container}>
                   <Button
                     title="Generate New Wallet"
                     onPress={generateWallet}
@@ -637,7 +540,7 @@ export default function BananoScreen() {
                     title="Import Wallet From Legacy"
                     onPress={importWalletLegacy}
                   />
-                </>
+                </View>
               ) : (
                 <>
                   <View style={styles.balanceContainer}>

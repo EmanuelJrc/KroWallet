@@ -13,15 +13,15 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
-import { styles } from "../styles/nanoStyles";
+import { styles } from "../../styles/nanoStyles";
 import Icon from "react-native-vector-icons/Ionicons";
-import { ThemeContext } from "../utils/ThemeContext";
+import { ThemeContext } from "../../utils/ThemeContext";
 import { Button } from "react-native-paper";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system";
 import { Share } from "react-native";
 
-export default function ReceiveNano({ name, visible, onClose, address }) {
+export default function ReceiveModal({ name, visible, onClose, address }) {
   const { height } = Dimensions.get("window");
   const { isDarkMode } = useContext(ThemeContext);
 
@@ -136,82 +136,84 @@ export default function ReceiveNano({ name, visible, onClose, address }) {
         ]}
         {...panResponder.panHandlers}
       >
-        {/* Header */}
-        <TouchableOpacity
-          style={[
-            styles.receiveHeader,
-            isDragging && { backgroundColor: "#444" },
-          ]}
-          activeOpacity={1}
-          onLayout={handleHeaderLayout}
-        >
+        <View style={styles.receiveModalContent}>
+          {/* Header */}
           <TouchableOpacity
-            onPress={handleHeaderPress}
-            style={styles.receiveIconButton}
+            style={[
+              styles.receiveHeader,
+              isDragging && { backgroundColor: "#444" },
+            ]}
+            activeOpacity={1}
           >
-            <Icon
-              name="arrow-back"
-              size={24}
-              color={isDarkMode ? "#FFF" : "#000"}
-            />
+            <TouchableOpacity
+              onPress={() =>
+                Animated.timing(slideAnim, {
+                  toValue: height,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start(onClose)
+              }
+              style={styles.receiveIconButton}
+            >
+              <Icon
+                name="arrow-back"
+                size={24}
+                color={isDarkMode ? "#FFF" : "#000"}
+              />
+            </TouchableOpacity>
+
+            <Text style={styles.receiveHeaderText}>Receive {name}</Text>
+
+            <TouchableOpacity onPress={() => {}} style={styles.iconButton}>
+              <Icon
+                name="help-circle-outline"
+                size={24}
+                color={isDarkMode ? "#FFF" : "#000"}
+              />
+            </TouchableOpacity>
           </TouchableOpacity>
 
-          <Text style={styles.receiveHeaderText}>Receive {name}</Text>
-
-          <TouchableOpacity
-            onPress={handleHeaderPress}
-            style={styles.iconButton}
-          >
-            <Icon
-              name="help-circle-outline"
-              size={24}
-              color={isDarkMode ? "#FFF" : "#000"}
-            />
-          </TouchableOpacity>
-        </TouchableOpacity>
-
-        {/* Modal Content */}
-        <View style={styles.receiveModalView}>
-          <View style={styles.qrContainer}>
-            {address ? (
-              <QRCode value={address} size={200} />
-            ) : (
-              <Text>No address available</Text>
-            )}
+          {/* Modal Content */}
+          <View style={styles.receiveModalBody}>
+            <View style={styles.qrContainer}>
+              {address ? (
+                <QRCode value={address} size={200} />
+              ) : (
+                <Text>No address available</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.addressContainer}
+              onPress={copyToClipboard}
+            >
+              <Text style={styles.addressText}>{address}</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.addressContainer}
-            onPress={copyToClipboard}
-          >
-            <Text style={styles.addressText}>{address}</Text>
-          </TouchableOpacity>
+
+          {/* Share Button at Bottom */}
+          <View style={styles.sendButtonView}>
+            <Button
+              mode="contained"
+              style={styles.shareButton}
+              onPress={shareAddress}
+              labelStyle={styles.shareButtonLabel}
+            >
+              Share Address
+            </Button>
+          </View>
         </View>
-        <View style={styles.sendButtonView}>
-          <Button
-            mode="contained"
-            style={styles.shareButton}
-            onPress={() => {
-              shareAddress();
-            }}
-            labelStyle={styles.shareButtonLabel}
-          >
-            Share Address
-          </Button>
-        </View>
+
         {/* Copy Toast */}
         {showCopyToast && (
           <Animated.View
             style={[
               styles.toastContainer,
-              {
-                transform: [{ translateY: toastAnim }],
-              },
+              { transform: [{ translateY: toastAnim }] },
             ]}
           >
             <View style={styles.toastContent}>
               <Text style={styles.toastText}>Address copied</Text>
               <Text style={styles.toastAddress}>
-                {" "}
                 {truncateAddress(address)}
               </Text>
             </View>

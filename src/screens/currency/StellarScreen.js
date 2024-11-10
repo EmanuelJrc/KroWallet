@@ -18,8 +18,6 @@ import * as StellarSdk from "@stellar/stellar-sdk";
 import * as Clipboard from "expo-clipboard";
 import * as SecureStore from "expo-secure-store";
 import { ThemeContext } from "../../utils/ThemeContext";
-import SendNano from "../../components/SendNano";
-import ReceiveNano from "../../components/ReceiveNano";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import StellarPriceDetail from "../../components/StellarPriceDetail";
@@ -28,6 +26,8 @@ import useModalAnimation from "../../hooks/useModalAnimation";
 import WalletActions from "../../components/WalletActions";
 import GradientBackground from "../../components/GradientBackground";
 import { Button } from "react-native-paper";
+import SendModal from "../../components/modals/SendModal";
+import ReceiveModal from "../../components/modals/ReceiveModal";
 
 const StellarScreen = () => {
   const [publicKey, setPublicKey] = useState(null);
@@ -88,16 +88,18 @@ const StellarScreen = () => {
       headerStyle: {
         backgroundColor: isDarkMode ? "#333333" : "#ffffff",
       },
-      headerRight: () => (
-        <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
-          <Icon
-            name="information-circle-outline"
-            size={28}
-            color={isDarkMode ? "white" : "black"}
-            paddingRight={15}
-          />
-        </TouchableOpacity>
-      ),
+      headerRight: walletCreated
+        ? () => (
+            <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
+              <Icon
+                name="information-circle-outline"
+                size={28}
+                color={isDarkMode ? "white" : "black"}
+                paddingRight={15}
+              />
+            </TouchableOpacity>
+          )
+        : null,
       headerLeft: () => (
         <TouchableOpacity onPress={() => navigation.navigate("Home")}>
           <Icon
@@ -109,7 +111,7 @@ const StellarScreen = () => {
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
+  }, [navigation, walletCreated]);
 
   useEffect(() => {
     // Retrieve the secret key from secure storage when the component mounts
@@ -318,11 +320,6 @@ const StellarScreen = () => {
     }
   };
 
-  const copyToClipboardPublic = async () => {
-    await Clipboard.setStringAsync(publicKey);
-    alert("Copied to clipboard");
-  };
-
   const copyToClipboardSecret = async () => {
     await Clipboard.setStringAsync(secretKey);
     alert("Copied to clipboard");
@@ -422,7 +419,7 @@ const StellarScreen = () => {
         <View style={{ flex: 1 }}>
           <ScrollView style={{ padding: 15, minHeight: 140 }}>
             <View style={styles.container}>
-              <SendNano
+              <SendModal
                 name={"Stellar"}
                 ticker={"XLM"}
                 visible={sendModalVisible}
@@ -434,7 +431,7 @@ const StellarScreen = () => {
                 amountToSend={amount}
                 setAmountToSend={setAmount}
               />
-              <ReceiveNano
+              <ReceiveModal
                 name={"Stellar"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}
@@ -488,27 +485,53 @@ const StellarScreen = () => {
               </Modal>
 
               {!walletCreated ? (
-                <>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={generateStellarWallet}
-                  >
-                    <Text style={styles.buttonText}>
-                      Generate Stellar Wallet
+                <View style={styless.screen}>
+                  <View style={styless.cardContainer}>
+                    <Text style={styless.cardHeaderText}>
+                      Import Existing Wallet
                     </Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.importSection}>
-                    <Text style={styles.label}>Import Existing Wallet</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter Secret Key"
-                      value={importSecretKey}
-                      onChangeText={setImportSecretKey}
-                    />
-                    <Button title="Import Wallet" onPress={importWallet} />
+                    <View style={styless.importSection}>
+                      <Text style={styless.label}>Enter Secret Key</Text>
+                      <TextInput
+                        style={styless.input}
+                        multiline={true}
+                        placeholder="Secret Key"
+                        placeholderTextColor={isDarkMode ? "#888" : "#aaa"}
+                        value={importSecretKey}
+                        onChangeText={setImportSecretKey}
+                        onKeyPress={({ nativeEvent }) => {
+                          if (nativeEvent.key === "Enter") {
+                            importWallet(); // Trigger importWallet on "Enter"
+                          }
+                        }}
+                        blurOnSubmit={true} // Dismiss keyboard after submission
+                        returnKeyType="done" // Show "Done" on mobile keyboards
+                      />
+                      <TouchableOpacity
+                        style={styless.importButton}
+                        onPress={importWallet}
+                      >
+                        <Text style={styless.importButtonText}>
+                          Import Wallet
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </>
+
+                  <View style={styless.cardContainer}>
+                    <Text style={styless.cardHeaderText}>
+                      Create New Wallet
+                    </Text>
+                    <TouchableOpacity
+                      style={styless.actionButton}
+                      onPress={generateStellarWallet}
+                    >
+                      <Text style={styless.actionButtonText}>
+                        Generate Stellar Wallet
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ) : (
                 <>
                   {balance && (
@@ -603,3 +626,83 @@ const StellarScreen = () => {
 };
 
 export default StellarScreen;
+
+export const styless = StyleSheet.create({
+  screen: {
+    flex: 1,
+    padding: 20,
+    paddingTop: 140,
+    justifyContent: "center",
+  },
+  cardContainer: {
+    borderRadius: 12,
+    padding: 20,
+    marginVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 6,
+    alignItems: "center",
+    backgroundColor: "#333",
+  },
+  cardHeaderText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "white",
+    marginBottom: 10,
+  },
+  actionButton: {
+    backgroundColor: "#296fc5",
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    marginVertical: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  actionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  importSection: {
+    alignItems: "center",
+    marginTop: 15,
+    width: "100%",
+  },
+  label: {
+    fontWeight: "500",
+    fontSize: 16,
+    color: "lightgray",
+    marginBottom: 8,
+    alignSelf: "flex-start",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 10,
+    width: "100%",
+    height: 80,
+    backgroundColor: "#f8f8f8",
+  },
+  importButton: {
+    marginTop: 10,
+    backgroundColor: "#296fc5",
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  importButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});

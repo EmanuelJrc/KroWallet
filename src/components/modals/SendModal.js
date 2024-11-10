@@ -13,11 +13,11 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { ThemeContext } from "../utils/ThemeContext";
+import { ThemeContext } from "../../utils/ThemeContext";
 import { Button } from "react-native-paper";
-import QRCodeScannerScreen from "../screens/QRCodeScannerScreen";
+import QRCodeScannerScreen from "../../screens/QRCodeScannerScreen";
 
-export default function SendNano({
+export default function SendModal({
   name,
   ticker,
   visible,

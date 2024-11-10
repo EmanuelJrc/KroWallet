@@ -38,7 +38,7 @@ import { ThemeContext } from "../../utils/ThemeContext";
 import useModalAnimation from "../../hooks/useModalAnimation";
 import Icon from "react-native-vector-icons/Ionicons";
 import { Button } from "react-native-paper";
-import ReceiveNano from "../../components/ReceiveNano";
+import ReceiveModal from "../../components/modals/ReceiveModal";
 
 const BitcoinWallet = () => {
   const navigation = useNavigation();
@@ -516,7 +516,7 @@ const BitcoinWallet = () => {
                   {/* ${fiatBalance ? fiatBalance : "0.00"} */} $0.00
                 </Text>
               </View>
-              <ReceiveNano
+              <ReceiveModal
                 name={"Bitcoin"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}

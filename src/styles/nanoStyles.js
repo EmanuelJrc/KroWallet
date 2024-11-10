@@ -160,10 +160,11 @@ export const styles = StyleSheet.create({
   sendButtonView: {
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: "30%",
   },
   shareButton: {
-    maxWidth: "90%",
-    minWidth: "90%",
+    maxWidth: "100%",
+    minWidth: "100%",
     backgroundColor: "#296fc5",
     height: "24%",
     textAlign: "center",
@@ -175,6 +176,8 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+    textAlign: "center",
+    width: "100%",
   },
   buttonClose: {
     backgroundColor: "#f44336",
@@ -327,20 +330,12 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 20,
   },
-  shareButton: {
-    maxWidth: "90%",
-    minWidth: "90%",
-    backgroundColor: "#296fc5",
-    height: "24%",
-    textAlign: "center",
-    justifyContent: "center",
-    fontWeight: "bold",
-    borderRadius: 25,
-  },
   shareButtonLabel: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+    textAlign: "center",
+    width: "100%",
   },
   toastContainer: {
     position: "absolute",
@@ -368,5 +363,29 @@ export const styles = StyleSheet.create({
     color: "grey",
     fontSize: 16,
     fontWeight: "bold",
+  },
+
+  receiveModalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  receiveModalContent: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: "#1a1a1a",
+    borderRadius: 10,
+    overflow: "hidden",
+    justifyContent: "space-between", // Distributes space between header, body, and footer
+  },
+  receiveModalBody: {
+    alignItems: "center",
+    marginTop: -70,
+    paddingHorizontal: 20,
+  },
+  sendButtonView: {
+    paddingHorizontal: 20,
+    paddingBottom: 50,
   },
 });

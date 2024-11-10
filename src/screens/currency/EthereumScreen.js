@@ -28,12 +28,12 @@ import {
 import { saveToSecureStore, getFromSecureStore } from "../../utils/secureStore";
 import { ethers } from "ethers";
 import * as SecureStore from "expo-secure-store";
-import ReceiveNano from "../../components/ReceiveNano";
-import SendNano from "../../components/SendNano";
 import WalletTransactionHistory from "../../services/ethereum/transactionList";
 import axios from "axios";
 import GradientBackground from "../../components/GradientBackground";
 import StellarPriceDetail from "../../components/StellarPriceDetail";
+import SendModal from "../../components/modals/SendModal";
+import ReceiveModal from "../../components/modals/ReceiveModal";
 
 const EthereumScreen = () => {
   const [refreshing, setRefreshing] = useState(false); // State for refreshing
@@ -592,7 +592,7 @@ const EthereumScreen = () => {
         <View style={{ flex: 1 }}>
           <ScrollView style={{ padding: 15, minHeight: 140 }}>
             <View style={styles.container}>
-              <SendNano
+              <SendModal
                 name={"Ethereum"}
                 ticker={"ETH"}
                 visible={sendModalVisible}
@@ -604,7 +604,7 @@ const EthereumScreen = () => {
                 amountToSend={amount}
                 setAmountToSend={setAmount}
               />
-              <ReceiveNano
+              <ReceiveModal
                 name={"Ethereum"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}

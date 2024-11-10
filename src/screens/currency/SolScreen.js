@@ -28,13 +28,13 @@ import * as SecureStore from "expo-secure-store";
 import { ScrollView } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../../styles/solanaStyles";
-import ReceiveNano from "../../components/ReceiveNano";
 import { ThemeContext } from "../../utils/ThemeContext";
-import SendNano from "../../components/SendNano";
 import WalletActions from "../../components/WalletActions";
 import GradientBackground from "../../components/GradientBackground";
 import StellarPriceDetail from "../../components/StellarPriceDetail";
 import axios from "axios";
+import SendModal from "../../components/modals/SendModal";
+import ReceiveModal from "../../components/modals/ReceiveModal";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
@@ -354,7 +354,7 @@ export default function SolScreen() {
                 openExplore={openExplore}
               />
 
-              <SendNano
+              <SendModal
                 name={"Solana"}
                 ticker={"SOL"}
                 visible={sendModalVisible}
@@ -367,7 +367,7 @@ export default function SolScreen() {
                 setAmountToSend={setAmount}
               />
 
-              <ReceiveNano
+              <ReceiveModal
                 name={"Solana"}
                 visible={receiveModalVisible}
                 onClose={() => setReceiveModalVisible(false)}
