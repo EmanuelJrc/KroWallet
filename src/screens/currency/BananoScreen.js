@@ -183,6 +183,9 @@ export default function BananoScreen() {
       if (result) {
         setTransactionStatus(`Transaction sent: ${result.hash}`);
         alert(`Sending ${sendAmount} to ${recipientAddress}`);
+        // Reset the form fields
+        setRecipientAddress("");
+        setAmountToSend("");
       } else {
         setTransactionStatus("Failed to send transaction.");
       }
@@ -391,6 +394,7 @@ export default function BananoScreen() {
       setPrivateKey("");
       setWalletCreated(false);
       setAccounts([]);
+      closeModal();
       setTransactionStatus("Wallet deleted successfully");
     } catch (error) {
       console.log("Error deleting wallet:", error);
@@ -505,7 +509,6 @@ export default function BananoScreen() {
                 setRecipientAddress={setRecipientAddress}
                 amountToSend={amountToSend}
                 setAmountToSend={setAmountToSend}
-                transactionStatus={transactionStatus}
               />
               {/* Add the DerivedAccountsModal component */}
               <DerivedAccountsModal

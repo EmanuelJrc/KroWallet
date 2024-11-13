@@ -1,372 +1,130 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  RefreshControl,
-  ScrollView,
-  Linking,
-  Alert,
-  Modal,
-  Animated,
-  Image,
-} from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
-import { ThemeContext } from "../../utils/ThemeContext";
-import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
-import WalletActions from "../../components/WalletActions";
+// shim.js
+import { Buffer } from "buffer";
+import "react-native-get-random-values";
+import { getRandomValues as expoCryptoGetRandomValues } from "expo-crypto";
+getRandomValues = expoCryptoGetRandomValues;
+
+// Make sure Buffer is defined globally
+global.Buffer = Buffer;
+
+// BitcoinWallet.js
+import "../../../shim";
+
+import React, { useState } from "react";
+import { View, Text, Button, StyleSheet, Alert } from "react-native";
+import * as bip39 from "bip39";
+import { BIP32Factory } from "bip32";
+import * as SecureStore from "expo-secure-store";
+import ECPairFactory from "ecpair";
+import ecc from "@bitcoinerlab/secp256k1";
+import { bech32 } from "bech32";
+import { sha256 } from "js-sha256";
+
+const KAVA_PREFIX = "kava";
+const BIP44_PATH = "m/44'/459'/0'/0/0"; // BIP44 path for Cosmos-based chains like Kava
+
+// Initialize bip32 and ECPair with secp256k1
+const bip32 = BIP32Factory(ecc);
+const ECPair = ECPairFactory(ecc);
 
 const KavaScreen = () => {
-  const [refreshing, setRefreshing] = useState(false); // State for refreshing
-  const [balance, setBalance] = useState(null);
+  const [wallet, setWallet] = useState(null);
 
-  const navigation = useNavigation();
-  const { isDarkMode } = useContext(ThemeContext);
-
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  // Define the header background color interpolation
-  const headerBackgroundColor = scrollY.interpolate({
-    inputRange: [0, 100], // Adjust this range based on your header height
-    outputRange: ["transparent", isDarkMode ? "#333" : "#fff"], // Change the colors as needed
-    extrapolate: "clamp", // Prevents values from exceeding the defined range
-  });
-
-  // Set up header with the info button
-  useEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => (
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image
-            source={require("../../../assets/kava.png")} // Update the path to your image
-            style={{ width: 24, height: 24, marginRight: 8 }} // Adjust size and margin as needed
-          />
-          <Text
-            style={{
-              color: isDarkMode ? "#ffffff" : "#000000",
-              fontWeight: "bold",
-              fontSize: 18,
-            }}
-          >
-            Kava
-          </Text>
-        </View>
-      ),
-      headerShown: true,
-      headerTransparent: true,
-      headerMode: "float",
-      headerStyle: {
-        backgroundColor: isDarkMode ? "#333333" : "#ffffff",
-      },
-      headerRight: () => (
-        <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
-          <Icon
-            name="information-circle-outline"
-            size={28}
-            color={isDarkMode ? "white" : "black"}
-            paddingRight={15}
-          />
-        </TouchableOpacity>
-      ),
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
-          <Icon
-            name="arrow-back"
-            size={28}
-            color={isDarkMode ? "white" : "black"}
-            paddingLeft={15}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
-
-  // Fade and slide animations for opening the modal
-  const openModal = () => {
-    setModalVisible(true);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  // Fade and slide animations for closing the modal
-  const closeModal = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 50,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setModalVisible(false));
-  };
-
-  // Function to handle the pull-to-refresh action
-  const onRefresh = async () => {
-    setRefreshing(true); // Start refreshing
+  const generateWallet = async () => {
     try {
-      // Re-fetch balance and transactions
-      await checkBalance();
-      await fetchTransactions();
-    } catch (error) {
-      console.log("Error refreshing data:", error);
-    } finally {
-      setRefreshing(false); // Stop refreshing
-    }
-  };
+      // Step 1: Generate a mnemonic
+      const mnemonic = bip39.generateMnemonic();
+      console.log("Mnemonic:", mnemonic);
 
-  const openExplore = async () => {
-    try {
-      Linking.openURL("https://testnet.lumenscan.io/account/" + publicKey);
+      // Step 2: Save mnemonic to secure storage
+      await SecureStore.setItemAsync("kava_mnemonic", mnemonic);
+
+      // Step 3: Derive the seed from the mnemonic
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      console.log("Seed:", seed);
+
+      // Step 4: Generate a BIP32 root key from the seed
+      const root = bip32.fromSeed(seed);
+      const child = root.derivePath(BIP44_PATH);
+
+      // Step 5: Get the private and public keys
+      const privateKeyHex = child.privateKey.toString("hex");
+      const privateKeyBase64 = Buffer.from(child.privateKey).toString("base64");
+      const privateKeyBuffer = child.privateKey; // Direct Buffer format
+      const publicKey = child.publicKey;
+
+      // Step 6: Generate the Kava address using Bech32 encoding
+      const publicKeyHash = sha256(publicKey);
+      const words = bech32.toWords(
+        Buffer.from(publicKeyHash, "hex").slice(0, 20)
+      );
+      const address = bech32.encode(KAVA_PREFIX, words);
+
+      // Set wallet details in state
+      setWallet({
+        mnemonic,
+        address,
+        privateKeyHex,
+        privateKeyBase64,
+        privateKeyBuffer,
+      });
+
+      // Alert success
+      Alert.alert("Wallet Created", `Public Address: ${address}`);
     } catch (error) {
-      console.log("https://testnet.lumenscan.io/account/" + publicKey);
+      console.error("Error generating wallet:", error);
+      Alert.alert("Error", "Failed to generate wallet.");
     }
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 110, // Adjust based on your header height
-          backgroundColor: headerBackgroundColor,
-          zIndex: 1, // Ensure it sits above other components
-        }}
-      />
-      <LinearGradient
-        colors={
-          isDarkMode
-            ? ["#296fc5", "#3d3d3d", "#3d3d3d", "#333333"]
-            : ["#296fc5", "#5d97dd", "#ffffff", "#f0f0f0"]
-        }
-        style={StyleSheet.absoluteFill}
-      />
-      <Animated.ScrollView
-        style={{ flex: 1 }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false } // Use native driver for better performance
-        )}
-        scrollEventThrottle={16} // Update every 16ms
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={{ flex: 1 }}>
-          <ScrollView style={{ padding: 15, minHeight: 140 }}>
-            <View style={styles.container}>
-              <View style={styles.balanceInfo}>
-                <Text selectable style={styles.balanceText}>
-                  {/* {balance} */} 0.000 KAVA
-                </Text>
-                <Text style={styles.fiatBalanceText}>
-                  {/* ${fiatBalance ? fiatBalance : "0.00"} */}$0.00
-                </Text>
-              </View>
-              {/* Action Buttons */}
-              <WalletActions
-                isDarkMode={isDarkMode}
-                setSendModalVisible={openExplore}
-                setReceiveModalVisible={openExplore}
-                openExplore={openExplore}
-              />
-            </View>
-          </ScrollView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Kava Wallet Generator</Text>
+
+      <Button title="Generate Wallet" onPress={generateWallet} />
+
+      {wallet && (
+        <View style={styles.walletInfo}>
+          <Text style={styles.info}>Public Address: {wallet.address}</Text>
+          <Text style={styles.info} selectable>
+            Mnemonic: {wallet.mnemonic}
+          </Text>
+          <Text style={styles.info} selectable>
+            Private Key (Hex): {wallet.privateKeyHex}
+          </Text>
+          <Text style={styles.info} selectable>
+            Private Key (Base64): {wallet.privateKeyBase64}
+          </Text>
+          <Text style={styles.info} selectable>
+            Private Key (Buffer): {wallet.privateKeyBuffer.toString("hex")}
+          </Text>
         </View>
-      </Animated.ScrollView>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "90%",
-    padding: 20,
-    backgroundColor: "#333333",
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 10,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "white",
-  },
-  secretKeyText: {
-    fontSize: 16,
-    marginBottom: 15,
-    textAlign: "center",
-    color: "white",
-  },
-  deleteButton: {
-    backgroundColor: "#ff4d4d",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginTop: 15,
-  },
-  deleteButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  balanceInfo: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  actionButtonText: {
-    color: "black",
-    fontWeight: "regular",
-    fontSize: 16,
-    paddingTop: 5,
-  },
-  darkText: {
-    color: "white",
-  },
-  transactionHistory: {
-    marginTop: 20,
-    width: "100%",
-  },
-  transactionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "black",
-  },
-  transactionItem: {
-    backgroundColor: "#d9d9d9",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  transactionDate: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 5,
-  },
-  transactionContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  transactionType: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "black",
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  amountReceived: {
-    color: "green",
-  },
-  amountSent: {
-    color: "red",
-  },
-  transactionAddress: {
-    fontSize: 14,
-    color: "#6a6a6a",
-    marginTop: 5,
-  },
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
-    paddingTop: 60,
-  },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 20,
-  },
-  actionButton: {
-    backgroundColor: "#d9d9d9",
-    width: 70, // Set fixed width
-    height: 70, // Set fixed height
-    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  darkButton: {
-    color: "#fff",
-    backgroundColor: "#333",
+    padding: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
   },
-  button: {
-    backgroundColor: "#0078FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-  },
   walletInfo: {
-    marginTop: 30,
-    width: "100%",
-  },
-  balanceText: {
-    color: "#ffffff",
-    fontSize: 42,
-    fontWeight: "bold",
     marginTop: 20,
-    textAlign: "center",
-  },
-  fiatBalanceText: {
-    color: "#adadad",
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  label: {
-    fontWeight: "bold",
-    marginTop: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
     padding: 10,
-    marginTop: 5,
-    width: "80%",
-    height: 100,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+  },
+  info: {
+    fontSize: 16,
+    marginBottom: 8,
   },
 });
 

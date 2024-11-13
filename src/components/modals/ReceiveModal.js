@@ -17,8 +17,6 @@ import { styles } from "../../styles/nanoStyles";
 import Icon from "react-native-vector-icons/Ionicons";
 import { ThemeContext } from "../../utils/ThemeContext";
 import { Button } from "react-native-paper";
-import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system";
 import { Share } from "react-native";
 
 export default function ReceiveModal({ name, visible, onClose, address }) {

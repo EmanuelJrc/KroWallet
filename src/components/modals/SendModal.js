@@ -180,8 +180,6 @@ export default function SendModal({
           </View>
         </View>
         <View style={styles.sendButtonView}>
-          {transactionStatus ? <Text>{transactionStatus}</Text> : null}
-
           <Button
             mode="contained"
             style={styles.shareButton}
@@ -309,12 +307,11 @@ const styles = StyleSheet.create({
   sendModalView: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 130,
+    paddingVertical: 120,
   },
   sendButtonView: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 33,
   },
   modalTitle: {
     fontSize: 22,

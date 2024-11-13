@@ -94,46 +94,43 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
   },
   lightContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#ffffff",
   },
   darkContainer: {
     backgroundColor: "#333333",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 20,
   },
   lightText: {
     color: "#000000",
   },
   darkText: {
-    color: "#FFFFFF",
+    color: "#ffffff",
   },
   cryptoContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
+    paddingBottom: 20,
   },
   cryptoCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "80%",
-    height: Dimensions.get("window").height * 0.1,
-    margin: 10,
+    width: "45%",
+    marginVertical: 10,
     padding: 15,
     borderRadius: 12,
-    elevation: 3, // for Android shadow
-    shadowColor: "#000", // for iOS shadow
+    elevation: 3, // Android shadow
+    shadowColor: "#000", // iOS shadow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    overflow: "hidden", // Avoid clipping rounded corners
   },
   cryptoCardLight: {
-    backgroundColor: "#d9d9d9",
+    backgroundColor: "#f5f5f5",
   },
   cryptoCardDark: {
     backgroundColor: "#595959",
@@ -143,7 +140,9 @@ const styles = StyleSheet.create({
     height: 40,
   },
   cryptoText: {
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: "600",
+    flex: 1, // Ensure text doesn't overlap with the icon
   },
 });
 

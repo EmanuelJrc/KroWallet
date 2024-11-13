@@ -35,6 +35,7 @@ import StellarPriceDetail from "../../components/StellarPriceDetail";
 import axios from "axios";
 import SendModal from "../../components/modals/SendModal";
 import ReceiveModal from "../../components/modals/ReceiveModal";
+import WalletSetup from "../../components/WalletSetup";
 
 export default function SolScreen() {
   const [wallet, setWallet] = useState(null);
@@ -282,7 +283,7 @@ export default function SolScreen() {
         setPriceChange(change);
       }
       setPrice(price.toFixed(4));
-      setPercentageChange(percentageChange); // Update state with formatted value
+      setPercentageChange(percentageChange.toFixed(2)); // Update state with formatted value
     } catch (error) {
       console.error("Error fetching price from CoinGecko:", error);
       alert("Failed to fetch price.");
@@ -336,24 +337,6 @@ export default function SolScreen() {
         <View style={{ flex: 1 }}>
           <ScrollView style={{ padding: 15, minHeight: 140 }}>
             <View style={styles.container}>
-              <View style={styles.balanceSection}>
-                <View style={styles.balanceInfo}>
-                  <Text selectable style={styles.balanceText}>
-                    {balance} SOL
-                  </Text>
-                  <Text style={styles.fiatBalanceText}>
-                    ${fiatBalance ? fiatBalance : "0.00"}
-                  </Text>
-                </View>
-              </View>
-
-              <WalletActions
-                isDarkMode={isDarkMode}
-                setSendModalVisible={setSendModalVisible}
-                setReceiveModalVisible={setReceiveModalVisible}
-                openExplore={openExplore}
-              />
-
               <SendModal
                 name={"Solana"}
                 ticker={"SOL"}
@@ -404,24 +387,34 @@ export default function SolScreen() {
 
               {!walletCreated ? (
                 <>
-                  <Button
-                    title="Generate New Wallet"
-                    onPress={handleCreateWallet}
+                  <WalletSetup
+                    isDarkMode={isDarkMode}
+                    importSecretKey={privateKey}
+                    setImportSecretKey={setPrivateKey}
+                    importWallet={handleImportWallet}
+                    generateWallet={handleCreateWallet}
+                    walletCreated={walletCreated}
                   />
-
-                  <Text style={styles.label}>
-                    Or import an existing wallet:
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter Private Key to Import"
-                    onChangeText={setPrivateKey}
-                    value={privateKey}
-                  />
-                  <Button title="Import Wallet" onPress={handleImportWallet} />
                 </>
               ) : (
                 <>
+                  <View style={styles.balanceSection}>
+                    <View style={styles.balanceInfo}>
+                      <Text selectable style={styles.balanceText}>
+                        {balance} SOL
+                      </Text>
+                      <Text style={styles.fiatBalanceText}>
+                        ${fiatBalance ? fiatBalance : "0.00"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <WalletActions
+                    isDarkMode={isDarkMode}
+                    setSendModalVisible={setSendModalVisible}
+                    setReceiveModalVisible={setReceiveModalVisible}
+                    openExplore={openExplore}
+                  />
                   <StellarPriceDetail
                     name={"Solana"}
                     price={price}

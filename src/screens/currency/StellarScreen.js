@@ -28,6 +28,8 @@ import GradientBackground from "../../components/GradientBackground";
 import { Button } from "react-native-paper";
 import SendModal from "../../components/modals/SendModal";
 import ReceiveModal from "../../components/modals/ReceiveModal";
+import TransactionHistory from "../../components/StellarTransactionList";
+import WalletSetup from "../../components/WalletSetup";
 
 const StellarScreen = () => {
   const [publicKey, setPublicKey] = useState(null);
@@ -365,7 +367,7 @@ const StellarScreen = () => {
         setPriceChange(change);
       }
       setPrice(price.toFixed(4));
-      setPercentageChange(percentageChange); // Update state with formatted value
+      setPercentageChange(percentageChange.toFixed(2)); // Update state with formatted value
     } catch (error) {
       console.error("Error fetching price from CoinGecko:", error);
       alert("Failed to fetch price.");
@@ -485,53 +487,14 @@ const StellarScreen = () => {
               </Modal>
 
               {!walletCreated ? (
-                <View style={styless.screen}>
-                  <View style={styless.cardContainer}>
-                    <Text style={styless.cardHeaderText}>
-                      Import Existing Wallet
-                    </Text>
-                    <View style={styless.importSection}>
-                      <Text style={styless.label}>Enter Secret Key</Text>
-                      <TextInput
-                        style={styless.input}
-                        multiline={true}
-                        placeholder="Secret Key"
-                        placeholderTextColor={isDarkMode ? "#888" : "#aaa"}
-                        value={importSecretKey}
-                        onChangeText={setImportSecretKey}
-                        onKeyPress={({ nativeEvent }) => {
-                          if (nativeEvent.key === "Enter") {
-                            importWallet(); // Trigger importWallet on "Enter"
-                          }
-                        }}
-                        blurOnSubmit={true} // Dismiss keyboard after submission
-                        returnKeyType="done" // Show "Done" on mobile keyboards
-                      />
-                      <TouchableOpacity
-                        style={styless.importButton}
-                        onPress={importWallet}
-                      >
-                        <Text style={styless.importButtonText}>
-                          Import Wallet
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={styless.cardContainer}>
-                    <Text style={styless.cardHeaderText}>
-                      Create New Wallet
-                    </Text>
-                    <TouchableOpacity
-                      style={styless.actionButton}
-                      onPress={generateStellarWallet}
-                    >
-                      <Text style={styless.actionButtonText}>
-                        Generate Stellar Wallet
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                <WalletSetup
+                  isDarkMode={isDarkMode}
+                  importSecretKey={importSecretKey}
+                  setImportSecretKey={setImportSecretKey}
+                  importWallet={importWallet}
+                  generateWallet={generateStellarWallet}
+                  walletCreated={walletCreated}
+                />
               ) : (
                 <>
                   {balance && (
@@ -560,61 +523,11 @@ const StellarScreen = () => {
                     chartData={chartData}
                   />
 
-                  {transactions.length > 0 && (
-                    <View style={styles.transactionHistory}>
-                      <Text
-                        style={[
-                          styles.transactionTitle,
-                          isDarkMode && styles.darkText,
-                        ]}
-                      >
-                        Transaction History
-                      </Text>
-                      {transactions.map((tx) => {
-                        const isReceived = tx.to === publicKey;
-                        return (
-                          <View
-                            key={tx.id}
-                            style={[
-                              styles.transactionItem,
-                              isDarkMode && styles.darkButton,
-                              isReceived
-                                ? styles.receivedTransaction
-                                : styles.sentTransaction,
-                            ]}
-                          >
-                            <Text style={styles.transactionDate}>
-                              {new Date(tx.created_at).toLocaleDateString()}
-                            </Text>
-                            <View style={styles.transactionContent}>
-                              <Text
-                                style={[
-                                  styles.transactionType,
-                                  isDarkMode && styles.darkText,
-                                ]}
-                              >
-                                {isReceived ? "Received" : "Sent"}
-                              </Text>
-                              <Text
-                                style={[
-                                  styles.transactionAmount,
-                                  isReceived
-                                    ? styles.amountReceived
-                                    : styles.amountSent,
-                                ]}
-                              >
-                                {isReceived ? `+${tx.amount}` : `-${tx.amount}`}{" "}
-                                {tx.asset}
-                              </Text>
-                            </View>
-                            <Text style={styles.transactionAddress}>
-                              {isReceived ? `From: ${tx.from}` : `To: ${tx.to}`}
-                            </Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
+                  <TransactionHistory
+                    transactions={transactions}
+                    publicKey={publicKey}
+                    isDarkMode={isDarkMode}
+                  />
                 </>
               )}
             </View>
@@ -626,83 +539,3 @@ const StellarScreen = () => {
 };
 
 export default StellarScreen;
-
-export const styless = StyleSheet.create({
-  screen: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 140,
-    justifyContent: "center",
-  },
-  cardContainer: {
-    borderRadius: 12,
-    padding: 20,
-    marginVertical: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 6,
-    alignItems: "center",
-    backgroundColor: "#333",
-  },
-  cardHeaderText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "white",
-    marginBottom: 10,
-  },
-  actionButton: {
-    backgroundColor: "#296fc5",
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    alignItems: "center",
-    marginVertical: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 6,
-  },
-  actionButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  importSection: {
-    alignItems: "center",
-    marginTop: 15,
-    width: "100%",
-  },
-  label: {
-    fontWeight: "500",
-    fontSize: 16,
-    color: "lightgray",
-    marginBottom: 8,
-    alignSelf: "flex-start",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 10,
-    width: "100%",
-    height: 80,
-    backgroundColor: "#f8f8f8",
-  },
-  importButton: {
-    marginTop: 10,
-    backgroundColor: "#296fc5",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  importButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

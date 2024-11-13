@@ -40,6 +40,7 @@ import GradientBackground from "../../components/GradientBackground";
 import StellarPriceDetail from "../../components/StellarPriceDetail";
 import SendModal from "../../components/modals/SendModal";
 import ReceiveModal from "../../components/modals/ReceiveModal";
+import WalletDetailsModal from "../../components/modals/WalletDetailsModal";
 
 const NODE_URL = "https://rpc.nano.to";
 
@@ -510,52 +511,16 @@ export default function NanoScreen() {
                 receivingStatus={receivingStatus}
               />
 
-              <Modal
-                transparent
+              <WalletDetailsModal
                 visible={modalVisible}
-                onRequestClose={closeModal}
-              >
-                <View style={styles.overlay}>
-                  <Animated.View
-                    style={[
-                      styles.modalContent,
-                      {
-                        opacity: fadeAnim,
-                        transform: [{ translateY: translateYAnim }],
-                      },
-                    ]}
-                  >
-                    <Text style={styles.modalTitle}>Mnemonic</Text>
-                    <Text selectable style={styles.secretKeyText}>
-                      {mnemonic}
-                    </Text>
-                    <Button
-                      title="Copy Mnemonic"
-                      onPress={() => {
-                        copyMnemonicToClipboard();
-                      }}
-                    />
-                    <Text style={styles.modalTitle}>Private Key</Text>
-                    <Text selectable style={styles.secretKeyText}>
-                      {privateKey}
-                    </Text>
-                    <Button
-                      title="Copy Private Key"
-                      onPress={() => {
-                        copyPrivateKeyToClipboard();
-                      }}
-                    />
-
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={deleteWallet}
-                    >
-                      <Text style={styles.deleteButtonText}>Delete Wallet</Text>
-                    </TouchableOpacity>
-                    <Button title="Close" onPress={closeModal} />
-                  </Animated.View>
-                </View>
-              </Modal>
+                onClose={closeModal}
+                mnemonic={mnemonic}
+                privateKey={privateKey}
+                onCopy={copyToClipboard}
+                onDelete={deleteWallet}
+                fadeAnim={fadeAnim}
+                translateYAnim={translateYAnim}
+              />
 
               {/* Modal to send Nano */}
               <SendModal

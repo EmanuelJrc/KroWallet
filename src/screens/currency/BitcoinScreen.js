@@ -39,6 +39,8 @@ import useModalAnimation from "../../hooks/useModalAnimation";
 import Icon from "react-native-vector-icons/Ionicons";
 import { Button } from "react-native-paper";
 import ReceiveModal from "../../components/modals/ReceiveModal";
+import TransactionList from "../../components/BitcoinTransactionList";
+import { BlockchainAPI } from "../../components/BlockchainAPI";
 
 const BitcoinWallet = () => {
   const navigation = useNavigation();
@@ -65,6 +67,7 @@ const BitcoinWallet = () => {
     privateKey: "",
     wif: "",
   });
+  const [balance, setBalance] = useState(0);
   const [importKey, setImportKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [isWalletGenerated, setIsWalletGenerated] = useState(false);
@@ -75,6 +78,7 @@ const BitcoinWallet = () => {
   // Save wallet data to secure storage
   const saveWalletToSecureStore = async (walletData) => {
     try {
+      console.log("Saving wallet data to secure store...");
       await SecureStore.setItemAsync("walletData", JSON.stringify(walletData));
       console.log("Wallet saved to secure store!");
     } catch (error) {
@@ -100,6 +104,21 @@ const BitcoinWallet = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const walletBalance = await BlockchainAPI.getBalance(
+          walletData.nativeSegwitAddress
+        );
+        setBalance(walletBalance);
+      } catch (err) {
+        console.error("Error fetching balance:", err);
+      }
+    };
+
+    fetchBalance();
+  }, [walletData.nativeSegwitAddress]);
 
   const importWallet = async () => {
     setLoading(true);
@@ -411,8 +430,19 @@ const BitcoinWallet = () => {
 
   // Load the wallet data from secure storage when the component mounts
   useEffect(() => {
-    setLoading(true);
-    loadWalletFromSecureStore();
+    const initializeWallet = async () => {
+      setLoading(true);
+      try {
+        await loadWalletFromSecureStore();
+      } catch (error) {
+        console.error("Error initializing wallet:", error);
+        Alert.alert("Error", "Failed to initialize wallet.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeWallet();
   }, []);
 
   // Set up header with the info button and conditional display
@@ -510,7 +540,7 @@ const BitcoinWallet = () => {
             <View style={styles.testContainer}>
               <View style={styles.balanceInfo}>
                 <Text selectable style={styles.balanceText}>
-                  {/* {balance} */} 0.00 BTC
+                  {balance} BTC
                 </Text>
                 <Text style={styles.fiatBalanceText}>
                   {/* ${fiatBalance ? fiatBalance : "0.00"} */} $0.00
@@ -550,8 +580,23 @@ const BitcoinWallet = () => {
                       Copy Mnemonic
                     </Button>
 
+                    <Text style={[styles.modalTitle, { marginTop: 20 }]}>
+                      WIF
+                    </Text>
+                    <Text selectable style={styles.secretKeyText}>
+                      {walletData.wif}
+                    </Text>
                     <Button
-                      style={styles.closeButton}
+                      mode="contained"
+                      onPress={() => {
+                        copyToClipboard(walletData.wif, "Mnemonic");
+                      }}
+                    >
+                      Copy WIF
+                    </Button>
+
+                    <Button
+                      style={([styles.closeButton], { marginTop: 40 })}
                       mode="contained"
                       onPress={closeModal}
                     >
@@ -618,6 +663,7 @@ const BitcoinWallet = () => {
                   setWalletData({});
                 }}
               />
+              <TransactionList walletAddress={walletData.nativeSegwitAddress} />
             </View>
           </Animated.ScrollView>
         ) : (
@@ -818,6 +864,7 @@ const styles = StyleSheet.create({
   testContainer: {
     flex: 1,
     padding: 16,
+    marginTop: 20,
     color: "white",
     label: {
       fontSize: 16,
